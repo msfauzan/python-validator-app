@@ -1,20 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import pandas as pd
 import os
-from openpyxl.styles import PatternFill
-from openpyxl.comments import Comment
-from openpyxl.utils.exceptions import InvalidFileException
-import re
-from difflib import SequenceMatcher
 import db_utils
 import json
-import ttkbootstrap as ttkb  # Ganti import ttkthemes dengan ttkbootstrap
+import ttkbootstrap as ttkb
 from data_validator import DataValidator
 from tool_tip import ToolTip
 from windows import ManageMappingWindow, ManageBankCodesWindow
-import collections
-from openpyxl import Workbook
 
 # Load konfigurasi
 config = db_utils.load_config()
@@ -35,8 +27,8 @@ COL_KODE_BANK = "cKdBank"
 COL_STATUS_PENERIMA = "status_penerima"
 COL_STATUS_PEMBAYAR = "status_pembayar"
 COL_STT = "stt"
-COL_TAHUN = "tahun"  # Add this near other column constants
-COL_BULAN = "bulan"  # Add this near other column constants
+COL_TAHUN = "tahun"
+COL_BULAN = "bulan"
 
 class App:
     def __init__(self, root):

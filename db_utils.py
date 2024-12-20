@@ -1,7 +1,6 @@
 import sqlite3
 import json
 import logging
-import sys
 from tkinter import messagebox
 import os
 
