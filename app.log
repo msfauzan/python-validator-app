@@ -1,0 +1,4 @@
+2024-12-17 15:45:51,082 - ERROR - Error processing file: module 'db_utils' has no attribute 'COL_NAMA_PENERIMA'
+2024-12-17 15:45:55,030 - ERROR - Data tidak cukup untuk diproses.
+2024-12-17 15:47:30,831 - ERROR - Tidak ada hasil validasi yang ditemukan atau format hasil tidak valid.
+2024-12-19 10:54:46,918 - root - ERROR - Gagal load icon: icon.ico
