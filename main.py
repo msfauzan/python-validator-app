@@ -13,13 +13,15 @@ import ttkbootstrap as ttkb  # Ganti import ttkthemes dengan ttkbootstrap
 from data_validator import DataValidator
 from tool_tip import ToolTip
 from windows import ManageMappingWindow, ManageBankCodesWindow
+import collections
+from openpyxl import Workbook
 
 # Load konfigurasi
 config = db_utils.load_config()
 
 # Constants dari config, dengan fallback value jika config tidak ada
 DATABASE_NAME = config.get("database", {}).get("name", "reference_data.db") if config else "reference_data.db"
-CATEGORIES = config.get("ui", {}).get("categories", ["K0", "L0", "L9", "N0", "P0", "Q1", "Q2", "S9"]) if config else ["K0", "L0", "L9", "N0", "P0", "Q1", "Q2", "S9"]
+CATEGORIES = config.get("ui", {}).get("categories", ["B0", "C0", "C9", "D0", "E0", "F1", "F2", "Z9"]) if config else ["B0", "C0", "C9", "D0", "E0", "F1", "F2", "Z9"]
 N1_STT_CODES = config.get("validation", {}).get("n1_stt_codes", ["1NNN", "1000", "1901", "1902", "1903", "1904", "1905", "1911", "1912", "1906", "1907", "2NNN", "2000", "2901", "2902", "2903", "2904", "2905", "2911", "2912", "2906", "2907"]) if config else ["1NNN", "1000", "1901", "1902", "1903", "1904", "1905", "1911", "1912", "1906", "1907", "2NNN", "2000", "2901", "2902", "2903", "2904", "2905", "2911", "2912", "2906", "2907"]
 FUZZY_MATCH_THRESHOLD = config.get("validation", {}).get("fuzzy_match_threshold", 0.9) if config else 0.9
 ICON_PATH = config.get("ui", {}).get("icon_path", "icon.ico") if config else "icon.ico"
@@ -38,13 +40,12 @@ COL_BULAN = "bulan"  # Add this near other column constants
 
 class App:
     def __init__(self, root):
-        if not isinstance(root, ttkb.Window):  # Ubah pengecekan ke ttkb.Window
+        if not isinstance(root, ttkb.Window):
             raise ValueError("root harus instance dari ttkb.Window")
         self.root = root
-        self.style = ttkb.Style("cosmo")  # Set tema Material Design
+        self.style = ttkb.Style("cosmo")
         self.root.title("Data Validator")
         
-        # Tambahkan error handling untuk DataValidator
         try:
             self.validator = DataValidator(FUZZY_MATCH_THRESHOLD)
         except Exception as e:
@@ -255,7 +256,7 @@ Panduan Penggunaan Data Validation Tool
 
 2. Format Excel yang Didukung:
    - File harus memiliki kolom: nama_penerima, kategori_penerima, dll
-   - Kategori yang valid: K0, L0, L9, N0, P0, Q1, Q2, S9
+   - Kategori yang valid: B0, C0, C9, D0, E0, F1, F2, Z9
 
 3. Shortcuts:
    - Ctrl+O : Buka file
@@ -485,6 +486,6 @@ Panduan Penggunaan Data Validation Tool
             messagebox.showerror("Error", "Tidak ada file validasi yang tersedia untuk dibuka.")
 
 if __name__ == "__main__":
-    root = ttkb.Window(themename="cosmo")  # Ganti ThemedTk dengan ttkb.Window
+    root = ttkb.Window(themename="cosmo")
     app = App(root)
     root.mainloop()

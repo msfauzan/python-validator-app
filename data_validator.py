@@ -16,8 +16,8 @@ COL_KODE_BANK = "cKdBank"
 COL_STATUS_PENERIMA = "status_penerima"
 COL_STATUS_PEMBAYAR = "status_pembayar"
 COL_STT = "stt"
-COL_TAHUN = "tahun"  # Add this near other column constants
-COL_BULAN = "bulan"  # Add this near other column constants
+COL_TAHUN = "tahun"
+COL_BULAN = "bulan"
 
 class DataValidator:
     def __init__(self, fuzzy_match_threshold=0.9):
@@ -270,7 +270,7 @@ class DataValidator:
                         suggested_category_pembayar = "I0"
                     else:
                         for central_bank_keyword in self.reference_mapping["penerima"]:
-                            if central_bank_keyword.upper() == "L0":
+                            if central_bank_keyword.upper() == "C0":
                                 continue
                             if (
                                 central_bank_keyword.upper()
@@ -278,14 +278,14 @@ class DataValidator:
                                 and self.reference_mapping["penerima"][
                                     central_bank_keyword
                                 ]
-                                == "L0"
+                                == "C0"
                             ):
-                                suggested_category_penerima = "L0"
+                                suggested_category_penerima = "C0"
                                 is_penerima_bank = False
                                 break
 
                         for central_bank_keyword in self.reference_mapping["pembayar"]:
-                            if central_bank_keyword.upper() == "L0":
+                            if central_bank_keyword.upper() == "C0":
                                 continue
                             if (
                                 central_bank_keyword.upper()
@@ -293,15 +293,15 @@ class DataValidator:
                                 and self.reference_mapping["pembayar"][
                                     central_bank_keyword
                                 ]
-                                == "L0"
+                                == "C0"
                             ):
-                                suggested_category_pembayar = "L0"
+                                suggested_category_pembayar = "C0"
                                 is_pembayar_bank = False
                                 break
 
                         if suggested_category_penerima is None:
                             for q1_bank_keyword in self.reference_mapping["penerima"]:
-                                if q1_bank_keyword.upper() == "Q1":
+                                if q1_bank_keyword.upper() == "F1":
                                     continue
                                 if (
                                     q1_bank_keyword.upper()
@@ -309,14 +309,14 @@ class DataValidator:
                                     and self.reference_mapping["penerima"][
                                         q1_bank_keyword
                                     ]
-                                    == "Q1"
+                                    == "F1"
                                 ):
-                                    suggested_category_penerima = "Q1"
+                                    suggested_category_penerima = "F1"
                                     break
 
                         if suggested_category_pembayar is None:
                             for q1_bank_keyword in self.reference_mapping["pembayar"]:
-                                if q1_bank_keyword.upper() == "Q1":
+                                if q1_bank_keyword.upper() == "F1":
                                     continue
                                 if (
                                     q1_bank_keyword.upper()
@@ -324,28 +324,28 @@ class DataValidator:
                                     and self.reference_mapping["pembayar"][
                                         q1_bank_keyword
                                     ]
-                                    == "Q1"
+                                    == "F1"
                                 ):
-                                    suggested_category_pembayar = "Q1"
+                                    suggested_category_pembayar = "F1"
                                     break
 
                         if suggested_category_penerima is None and is_penerima_bank:
                             if is_valid_bank_code_penerima:
                                 if penerima_status == "ID":
-                                    suggested_category_penerima = "L1"
+                                    suggested_category_penerima = "C1"
                                 else:
-                                    suggested_category_penerima = "L9"
+                                    suggested_category_penerima = "C9"
                             else:
-                                suggested_category_penerima = "L9"
+                                suggested_category_penerima = "C9"
 
                         if suggested_category_pembayar is None and is_pembayar_bank:
                             if is_valid_bank_code_pembayar:
                                 if pembayar_status == "ID":
-                                    suggested_category_pembayar = "L1"
+                                    suggested_category_pembayar = "C1"
                                 else:
-                                    suggested_category_pembayar = "L9"
+                                    suggested_category_pembayar = "C9"
                             else:
-                                suggested_category_pembayar = "L9"
+                                suggested_category_pembayar = "C9"
 
                         if (
                             is_penerima_bank
@@ -358,15 +358,15 @@ class DataValidator:
                             ):
                                 if penerima_status != "ID" or pembayar_status != "ID":
                                     if (
-                                        suggested_category_penerima != "L1"
-                                        and suggested_category_penerima != "Q1"
+                                        suggested_category_penerima != "C1"
+                                        and suggested_category_penerima != "F1"
                                     ):
-                                        suggested_category_penerima = "L2"
+                                        suggested_category_penerima = "C2"
                                     if (
-                                        suggested_category_pembayar != "L1"
-                                        and suggested_category_pembayar != "Q1"
+                                        suggested_category_pembayar != "C1"
+                                        and suggested_category_pembayar != "F1"
                                     ):
-                                        suggested_category_pembayar = "L2"
+                                        suggested_category_pembayar = "C2"
 
                     if suggested_category_penerima is None and not is_penerima_bank:
                         for (

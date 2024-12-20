@@ -1,6 +1,7 @@
-
+import tkinter as tk
 import ttkbootstrap as ttkb
 from tkinter import messagebox
+import db_utils
 
 class ManageMappingWindow(ttkb.Toplevel):
     """Window untuk mengelola mapping."""
@@ -64,7 +65,7 @@ class ManageMappingWindow(ttkb.Toplevel):
         ttkb.Label(main_frame, text="Category:").grid(
             row=4, column=0, sticky=(ttkb.W), padx=5, pady=5
         )
-        self.category_combobox = ttkb.Combobox(main_frame, values=CATEGORIES)
+        self.category_combobox = ttkb.Combobox(main_frame, values=db_utils.CATEGORIES)
         self.category_combobox.grid(row=5, column=0, sticky=(ttkb.W, ttkb.E), padx=5, pady=5)
 
         button_frame = ttkb.Frame(main_frame)
@@ -82,7 +83,6 @@ class ManageMappingWindow(ttkb.Toplevel):
         ttkb.Button(button_frame, text="Close", command=self.destroy).grid(
             row=0, column=3, padx=5
         )
-
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
@@ -200,7 +200,7 @@ class ManageBankCodesWindow(ttkb.Toplevel):
     def create_widgets(self):
         """Membuat widgets untuk ManageBankCodesWindow."""
         main_frame = ttkb.Frame(self, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(ttkb.W, ttkb.E, ttkkb.N, ttkb.S))
+        main_frame.grid(row=0, column=0, sticky=(ttkb.W, ttkb.E, ttkb.N, ttkb.S))
 
         self.tree = ttkb.Treeview(
             main_frame, columns=("Code", "Name"), show="headings"
