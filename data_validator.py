@@ -2,6 +2,7 @@ import pandas as pd
 from difflib import SequenceMatcher
 from openpyxl.styles import PatternFill
 from openpyxl.comments import Comment
+from openpyxl.utils.exceptions import InvalidFileException
 import re
 import os
 import db_utils
@@ -15,8 +16,8 @@ COL_KODE_BANK = "cKdBank"
 COL_STATUS_PENERIMA = "status_penerima"
 COL_STATUS_PEMBAYAR = "status_pembayar"
 COL_STT = "stt"
-COL_TAHUN = "tahun"
-COL_BULAN = "bulan"
+COL_TAHUN = "tahun"  # Add this near other column constants
+COL_BULAN = "bulan"  # Add this near other column constants
 
 class DataValidator:
     def __init__(self, fuzzy_match_threshold=0.9):
@@ -198,13 +199,8 @@ class DataValidator:
             except (ValueError, TypeError):
                 raise ValueError("Nilai tahun atau bulan tidak valid")
 
-            # Generate dan buat folder output
-            output_folder_name = f"{os.path.splitext(os.path.basename(input_file))[0]}_{tahun}_{str(bulan).zfill(2)}_validated"
-            os.makedirs(output_folder_name, exist_ok=True)
-            output_file = os.path.join(
-                output_folder_name,
-                os.path.basename(os.path.splitext(input_file)[0]) + f"_{tahun}_{str(bulan).zfill(2)}_validated.xlsx"
-            )
+            # Generate output filename with period
+            output_file = os.path.splitext(input_file)[0] + f"_{tahun}_{bulan:02d}_validated.xlsx"
             
             # Check if output file is currently open
             try:
@@ -305,7 +301,7 @@ class DataValidator:
 
                         if suggested_category_penerima is None:
                             for q1_bank_keyword in self.reference_mapping["penerima"]:
-                                if q1_bank_keyword.upper() == "F1":
+                                if q1_bank_keyword.upper() == "Q1":
                                     continue
                                 if (
                                     q1_bank_keyword.upper()
@@ -313,14 +309,14 @@ class DataValidator:
                                     and self.reference_mapping["penerima"][
                                         q1_bank_keyword
                                     ]
-                                    == "F1"
+                                    == "Q1"
                                 ):
-                                    suggested_category_penerima = "F1"
+                                    suggested_category_penerima = "Q1"
                                     break
 
                         if suggested_category_pembayar is None:
                             for q1_bank_keyword in self.reference_mapping["pembayar"]:
-                                if q1_bank_keyword.upper() == "F1":
+                                if q1_bank_keyword.upper() == "Q1":
                                     continue
                                 if (
                                     q1_bank_keyword.upper()
@@ -328,28 +324,28 @@ class DataValidator:
                                     and self.reference_mapping["pembayar"][
                                         q1_bank_keyword
                                     ]
-                                    == "F1"
+                                    == "Q1"
                                 ):
-                                    suggested_category_pembayar = "F1"
+                                    suggested_category_pembayar = "Q1"
                                     break
 
                         if suggested_category_penerima is None and is_penerima_bank:
                             if is_valid_bank_code_penerima:
                                 if penerima_status == "ID":
-                                    suggested_category_penerima = "C1"
+                                    suggested_category_penerima = "L1"
                                 else:
-                                    suggested_category_penerima = "C9"
+                                    suggested_category_penerima = "L9"
                             else:
-                                suggested_category_penerima = "C9"
+                                suggested_category_penerima = "L9"
 
                         if suggested_category_pembayar is None and is_pembayar_bank:
                             if is_valid_bank_code_pembayar:
                                 if pembayar_status == "ID":
-                                    suggested_category_pembayar = "C1"
+                                    suggested_category_pembayar = "L1"
                                 else:
-                                    suggested_category_pembayar = "C9"
+                                    suggested_category_pembayar = "L9"
                             else:
-                                suggested_category_pembayar = "C9"
+                                suggested_category_pembayar = "L9"
 
                         if (
                             is_penerima_bank
@@ -362,15 +358,15 @@ class DataValidator:
                             ):
                                 if penerima_status != "ID" or pembayar_status != "ID":
                                     if (
-                                        suggested_category_penerima != "C1"
-                                        and suggested_category_penerima != "F1"
+                                        suggested_category_penerima != "L1"
+                                        and suggested_category_penerima != "Q1"
                                     ):
-                                        suggested_category_penerima = "C2"
+                                        suggested_category_penerima = "L2"
                                     if (
-                                        suggested_category_pembayar != "C1"
-                                        and suggested_category_pembayar != "F1"
+                                        suggested_category_pembayar != "L1"
+                                        and suggested_category_pembayar != "Q1"
                                     ):
-                                        suggested_category_pembayar = "C2"
+                                        suggested_category_pembayar = "L2"
 
                     if suggested_category_penerima is None and not is_penerima_bank:
                         for (
@@ -445,86 +441,7 @@ class DataValidator:
 
                 cell.comment = Comment(comment_text, "Validator")
 
-            # Buat kamus penggantian header
-            rename_map = {
-                "cKdBank": "cKdBank",
-                "baris": "baris",
-                "sandi_bank": "Sandi Bank",
-                "tahun": "Thn",
-                "bulan": "Bln",
-                "tanggal": "Tgl",
-                "nomer_identifikasi": "No. Identifikasi",
-                "rekening": "Rek",
-                "status_penerima": "SPn",
-                "kategori_penerima": "KPn",
-                "status_pembayar": "SPb",
-                "kategori_pembayar": "KPb",
-                "hubungan_keuangan": "HK",
-                "sandi_negara": "NDK",
-                "sandi_valuta": "Valuta",
-                "nilai transaksi": "Nilai Transaksi",
-                "stt": "STT",
-                "nama_penerima": "Pelaku Penerima",
-                "jenis_id_penerima": "Jns Id Pn",
-                "nomor_id_penerima": "No Id Pn",
-                "nama_pembayar": "Pelaku Pembayar",
-                "jenis_id_pembayar": "Jns Id Pb",
-                "nomor_id_pembayar": "No Id Pb",
-                "bank_pengirim": "Bank Pengirim",
-                "bank_penerima": "Bank Penerima",
-                "detil_transaksi": "Keterangan Detail Transaksi",
-                "info_DP": "info DP",
-            }
-
-            # Ubah header di worksheet utama
-            for col_idx in range(1, worksheet.max_column + 1):
-                old_header = worksheet.cell(row=1, column=col_idx).value
-                new_header = rename_map.get(old_header, old_header)
-                worksheet.cell(row=1, column=col_idx).value = new_header
-
             writer.close()
-
-            # Mulai pemecahan file per cKdBank
-            unique_banks = output_df['cKdBank'].dropna().unique()
-            for bank_code in unique_banks:
-                subset_df = output_df[output_df['cKdBank'] == bank_code].copy()
-                if subset_df.empty:
-                    continue
-
-                split_file = os.path.join(
-                    output_folder_name,
-                    os.path.basename(os.path.splitext(input_file)[0]) + f"_{tahun}_{str(bulan).zfill(2)}_{bank_code}_validated.xlsx"
-                )
-                split_writer = pd.ExcelWriter(split_file, engine="openpyxl")
-                subset_df.to_excel(split_writer, index=False)
-                split_ws = split_writer.sheets["Sheet1"]
-
-                for res in validation_results:
-                    if res['bank_code'] == bank_code:
-                        # Cari baris di subset_df yang sesuai
-                        original_idx = res['row'] - 2  # 0-based index
-                        if original_idx in subset_df.index:
-                            # Dapatkan baris 'baru' di subset
-                            new_row = subset_df.index.get_loc(original_idx) + 2
-                            new_col = subset_df.columns.get_loc(res["column"]) + 1
-                            split_cell = split_ws.cell(row=new_row, column=new_col)
-                            split_cell.fill = red_fill
-                            comment_text = (
-                                f"Suggested category: {res['suggested']}\n"
-                                f"Name: {res['name']}\n"
-                                f"Bank code: {res.get('bank_code','')}\n"
-                                f"Status: {res['status']}"
-                            )
-                            split_cell.comment = Comment(comment_text, "Validator")
-                
-                # Ubah header di worksheet split
-                for col_idx in range(1, split_ws.max_column + 1):
-                    old_header = split_ws.cell(row=1, column=col_idx).value
-                    new_header = rename_map.get(old_header, old_header)
-                    split_ws.cell(row=1, column=col_idx).value = new_header
-
-                split_writer.close()
-
             return output_file, len(validation_results), validation_results
 
         except Exception as e:

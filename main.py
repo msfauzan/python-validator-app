@@ -1,9 +1,15 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import pandas as pd
 import os
+from openpyxl.styles import PatternFill
+from openpyxl.comments import Comment
+from openpyxl.utils.exceptions import InvalidFileException
+import re
+from difflib import SequenceMatcher
 import db_utils
 import json
-import ttkbootstrap as ttkb
+import ttkbootstrap as ttkb  # Ganti import ttkthemes dengan ttkbootstrap
 from data_validator import DataValidator
 from tool_tip import ToolTip
 from windows import ManageMappingWindow, ManageBankCodesWindow
@@ -27,17 +33,18 @@ COL_KODE_BANK = "cKdBank"
 COL_STATUS_PENERIMA = "status_penerima"
 COL_STATUS_PEMBAYAR = "status_pembayar"
 COL_STT = "stt"
-COL_TAHUN = "tahun"
-COL_BULAN = "bulan"
+COL_TAHUN = "tahun"  # Add this near other column constants
+COL_BULAN = "bulan"  # Add this near other column constants
 
 class App:
     def __init__(self, root):
-        if not isinstance(root, ttkb.Window):
+        if not isinstance(root, ttkb.Window):  # Ubah pengecekan ke ttkb.Window
             raise ValueError("root harus instance dari ttkb.Window")
         self.root = root
-        self.style = ttkb.Style("cosmo")
+        self.style = ttkb.Style("cosmo")  # Set tema Material Design
         self.root.title("Data Validator")
         
+        # Tambahkan error handling untuk DataValidator
         try:
             self.validator = DataValidator(FUZZY_MATCH_THRESHOLD)
         except Exception as e:
@@ -478,6 +485,6 @@ Panduan Penggunaan Data Validation Tool
             messagebox.showerror("Error", "Tidak ada file validasi yang tersedia untuk dibuka.")
 
 if __name__ == "__main__":
-    root = ttkb.Window(themename="cosmo")
+    root = ttkb.Window(themename="cosmo")  # Ganti ThemedTk dengan ttkb.Window
     app = App(root)
     root.mainloop()

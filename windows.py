@@ -10,6 +10,8 @@ class ManageMappingWindow(ttkb.Toplevel):
         super().__init__(parent)
         self.title("Manage Mapping")
         self.sort_order = {"column": "Keyword", "direction": "asc"}
+        self.minsize(600, 600)
+        self.resizable(True, True)
         self.create_widgets()
         self.populate_treeview()
 
@@ -211,7 +213,7 @@ class ManageBankCodesWindow(ttkb.Toplevel):
         self.tree.heading("Name", text="Name")
 
         self.tree.column("Code", width=100, anchor="center")
-        self.tree.column("Name", width=200)
+        self.tree.column("Name", width=200, anchor="center")
 
         scrollbar = ttkb.Scrollbar(
             main_frame, orient="vertical", command=self.tree.yview
