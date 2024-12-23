@@ -203,6 +203,28 @@ class DataValidator:
         allowed_categories = self.stt_category_exceptions.get(str(stt), [])
         return category in allowed_categories
 
+    def is_standalone_word(self, word, text):
+        """
+        Memeriksa apakah sebuah kata berdiri sendiri dalam teks.
+        
+        Args:
+            word (str): Kata yang dicari
+            text (str): Teks yang akan diperiksa
+            
+        Returns:
+            bool: True jika kata berdiri sendiri, False jika bagian dari kata lain
+        """
+        # Ubah ke uppercase untuk konsistensi
+        word = word.upper()
+        text = text.upper()
+        
+        # Tambahkan spasi di awal dan akhir teks untuk mempermudah pengecekan
+        text = f" {text} "
+        # Tambahkan spasi di awal dan akhir kata untuk mencari kata yang berdiri sendiri
+        search_word = f" {word} "
+        
+        return search_word in text
+
     def process_file(self, input_file):
         """
         Memproses file Excel dan melakukan validasi.
@@ -319,7 +341,7 @@ class DataValidator:
                 # Add check for STT category exceptions before the main validation logic
                 elif self.is_category_allowed_for_stt(row.get("stt", ""), row.get("kategori_penerima", "")):
                     # Skip validation for kategori_penerima if it's allowed for this STT
-                    suggested_category_penerima = row.get("kategori_penerima", "")  # Keep original validation for penerima
+                    suggested_category_penerima = None
                     suggested_category_pembayar = row.get("kategori_pembayar", "")  # Keep original validation for pembayar
                 else:
                     if (
@@ -428,21 +450,17 @@ class DataValidator:
                                         suggested_category_pembayar = "C2"
 
                     if suggested_category_penerima is None and not is_penerima_bank:
-                        for (
-                            keyword,
-                            expected_category,
-                        ) in self.reference_mapping["penerima"].items():
-                            if keyword.upper() in str(row["nama_penerima"]).upper():
+                        for keyword, expected_category in self.reference_mapping["penerima"].items():
+                            # Ganti pengecekan keyword dengan is_standalone_word
+                            if self.is_standalone_word(keyword, str(row["nama_penerima"])):
                                 if row["kategori_penerima"] != expected_category:
                                     suggested_category_penerima = expected_category
                                 break
 
                     if suggested_category_pembayar is None and not is_pembayar_bank:
-                        for (
-                            keyword,
-                            expected_category,
-                        ) in self.reference_mapping["pembayar"].items():
-                            if keyword.upper() in str(row["nama_pembayar"]).upper():
+                        for keyword, expected_category in self.reference_mapping["pembayar"].items():
+                            # Ganti pengecekan keyword dengan is_standalone_word
+                            if self.is_standalone_word(keyword, str(row["nama_pembayar"])):
                                 if row["kategori_pembayar"] != expected_category:
                                     suggested_category_pembayar = expected_category
                                 break
