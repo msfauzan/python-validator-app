@@ -98,6 +98,15 @@ def create_database():
                     )
                 """)
 
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS ref_mapping_status (
+                        keyword TEXT PRIMARY KEY NOT NULL,
+                        status TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
                 cursor.execute("COMMIT")
                 return True
                 
@@ -229,6 +238,19 @@ def insert_initial_data():
                     "INSERT INTO bank_codes (code, name) VALUES (?, ?)", (code, name)
                 )
 
+            # Insert initial status mapping
+            config = load_config()
+            initial_status_mapping = config.get("validation", {}).get("initial_status_mapping", {})
+            for keyword, statuses in initial_status_mapping.items():
+                for status in statuses:
+                    try:
+                        cursor.execute(
+                            "INSERT INTO ref_mapping_status (keyword, status) VALUES (?, ?)",
+                            (keyword, status)
+                        )
+                    except sqlite3.IntegrityError:
+                        continue
+
             conn.commit()
     except sqlite3.Error as e:
         log_error(f"Error inserting initial data: {e}")
@@ -268,6 +290,23 @@ def get_bank_codes():
             return data
     except sqlite3.Error as e:
         log_error(f"Error getting bank codes: {e}")
+        return {}
+
+def get_status_mapping():
+    """Get status mapping data."""
+    try:
+        with sqlite3.connect(DATABASE_NAME) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT keyword, status FROM ref_mapping_status")
+            mapping = {}
+            for row in cursor.fetchall():
+                if row['keyword'] not in mapping:
+                    mapping[row['keyword']] = []
+                mapping[row['keyword']].append(row['status'])
+            return mapping
+    except sqlite3.Error as e:
+        log_error(f"Database error: {e}")
         return {}
 
 def add_mapping_data(table_name, keyword, category):
@@ -431,6 +470,36 @@ def delete_bank_code(code):
             return True
     except sqlite3.Error as e:
         log_error(f"Error deleting bank code: {e} (Code: {code})")
+        return False
+
+def add_status_mapping(keyword, status):
+    """Add new status mapping."""
+    try:
+        with sqlite3.connect(DATABASE_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO ref_mapping_status (keyword, status) VALUES (?, ?)",
+                (keyword, status)
+            )
+            conn.commit()
+            return True
+    except sqlite3.Error as e:
+        log_error(f"Error adding status mapping: {e}")
+        return False
+
+def delete_status_mapping(keyword, status):
+    """Delete status mapping."""
+    try:
+        with sqlite3.connect(DATABASE_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM ref_mapping_status WHERE keyword = ? AND status = ?",
+                (keyword, status)
+            )
+            conn.commit()
+            return True
+    except sqlite3.Error as e:
+        log_error(f"Error deleting status mapping: {e}")
         return False
 
 # Panggil fungsi ini untuk membuat database (cukup sekali saja)

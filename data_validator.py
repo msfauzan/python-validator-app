@@ -26,6 +26,28 @@ class DataValidator:
         }
         self.bank_codes = db_utils.get_bank_codes()
         self.fuzzy_match_threshold = fuzzy_match_threshold
+        
+        # Load STT category exceptions from config
+        config = db_utils.load_config()
+        self.stt_category_exceptions = config.get("validation", {}).get("stt_category_exceptions", {})
+        self.status_mapping = db_utils.get_status_mapping()
+
+    def get_suggested_status(self, name):
+        """Get suggested status based on keywords in the name."""
+        name = str(name).upper()
+        suggested_statuses = set()
+        
+        for keyword, statuses in self.status_mapping.items():
+            if keyword in name:
+                suggested_statuses.update(statuses)
+
+        # Tambahan logika: jika ada ID atau N1 di suggested_statuses untuk nama PT/LTD/CV/KOPERASI, 
+        # maka keduanya dianggap benar
+        relevant_words = ["PT", "LTD", "CV", "KOPERASI"]
+        if any(w in name for w in relevant_words) and ("ID" in suggested_statuses or "N1" in suggested_statuses):
+            suggested_statuses.update(["ID", "N1"])
+                
+        return list(suggested_statuses)
 
     def validate_bank_code(self, bank_name, bank_code):
         """
@@ -154,6 +176,20 @@ class DataValidator:
         """
         return str(stt_value) in ["1NNN", "1000", "1901", "1902", "1903", "1904", "1905", "1911", "1912", "1906", "1907", "2NNN", "2000", "2901", "2902", "2903", "2904", "2905", "2911", "2912", "2906", "2907"]
 
+    def is_category_allowed_for_stt(self, stt, category):
+        """
+        Check if a category is allowed for a specific STT code.
+        
+        Args:
+            stt (str): The STT code
+            category (str): The category to check
+            
+        Returns:
+            bool: True if the category is allowed for this STT, False otherwise
+        """
+        allowed_categories = self.stt_category_exceptions.get(str(stt), [])
+        return category in allowed_categories
+
     def process_file(self, input_file):
         """
         Memproses file Excel dan melakukan validasi.
@@ -266,6 +302,11 @@ class DataValidator:
                     suggested_category_pembayar = "N1"
                     penerima_status = "N1"
                     pembayar_status = "N1"
+                # Add check for STT category exceptions before the main validation logic
+                elif self.is_category_allowed_for_stt(row.get("stt", ""), row.get("kategori_penerima", "")):
+                    # Skip validation for kategori_penerima if it's allowed for this STT
+                    suggested_category_penerima = None
+                    suggested_category_pembayar = row.get("kategori_pembayar", "")  # Keep original validation for pembayar
                 else:
                     if (
                         row["nama_penerima"] == row["nama_pembayar"]
@@ -423,6 +464,36 @@ class DataValidator:
                             "status": pembayar_status,
                         }
                     )
+
+                # Check status penerima
+                suggested_status_penerima = self.get_suggested_status(row["nama_penerima"])
+                current_status_penerima = str(row.get("status_penerima", "")).upper()
+                
+                if suggested_status_penerima and current_status_penerima not in suggested_status_penerima:
+                    validation_results.append({
+                        "row": idx + 2,
+                        "column": "status_penerima",
+                        "current": current_status_penerima,
+                        "suggested": "/".join(suggested_status_penerima),
+                        "name": row["nama_penerima"],
+                        "bank_code": row.get("cKdBank", ""),
+                        "status": current_status_penerima
+                    })
+
+                # Check status pembayar
+                suggested_status_pembayar = self.get_suggested_status(row["nama_pembayar"])
+                current_status_pembayar = str(row.get("status_pembayar", "")).upper()
+                
+                if suggested_status_pembayar and current_status_pembayar not in suggested_status_pembayar:
+                    validation_results.append({
+                        "row": idx + 2,
+                        "column": "status_pembayar",
+                        "current": current_status_pembayar,
+                        "suggested": "/".join(suggested_status_pembayar),
+                        "name": row["nama_pembayar"],
+                        "bank_code": row.get("cKdBank", ""),
+                        "status": current_status_pembayar
+                    })
 
             writer = pd.ExcelWriter(output_file, engine="openpyxl")
             output_df.to_excel(writer, index=False)

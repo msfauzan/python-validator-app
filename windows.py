@@ -310,3 +310,98 @@ class ManageBankCodesWindow(ttkb.Toplevel):
                 self.populate_treeview()
         else:
             messagebox.showerror("Error", "Please select an item to delete.")
+
+class ManageStatusMappingWindow(ttkb.Toplevel):
+    """Window untuk mengelola mapping status."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Manage Status Mapping")
+        self.minsize(600, 400)
+        self.create_widgets()
+        self.populate_treeview()
+
+    def create_widgets(self):
+        main_frame = ttkb.Frame(self, padding="10")
+        main_frame.grid(row=0, column=0, sticky="nsew")
+
+        # Create Treeview
+        self.tree = ttkb.Treeview(
+            main_frame, 
+            columns=("Keyword", "Status"),
+            show="headings"
+        )
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        
+        self.tree.heading("Keyword", text="Keyword")
+        self.tree.heading("Status", text="Status")
+        
+        scrollbar = ttkb.Scrollbar(
+            main_frame,
+            orient="vertical",
+            command=self.tree.yview
+        )
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        # Input frame
+        input_frame = ttkb.Frame(main_frame)
+        input_frame.grid(row=1, column=0, columnspan=2, pady=10)
+
+        ttkb.Label(input_frame, text="Keyword:").grid(row=0, column=0, padx=5)
+        self.keyword_entry = ttkb.Entry(input_frame)
+        self.keyword_entry.grid(row=0, column=1, padx=5)
+
+        ttkb.Label(input_frame, text="Status:").grid(row=0, column=2, padx=5)
+        self.status_entry = ttkb.Entry(input_frame)
+        self.status_entry.grid(row=0, column=3, padx=5)
+
+        # Buttons
+        btn_frame = ttkb.Frame(main_frame)
+        btn_frame.grid(row=2, column=0, columnspan=2, pady=10)
+
+        ttkb.Button(btn_frame, text="Add", command=self.add_mapping).grid(row=0, column=0, padx=5)
+        ttkb.Button(btn_frame, text="Delete", command=self.delete_mapping).grid(row=0, column=1, padx=5)
+        ttkb.Button(btn_frame, text="Close", command=self.destroy).grid(row=0, column=2, padx=5)
+
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.rowconfigure(0, weight=1)
+
+    def populate_treeview(self):
+        self.tree.delete(*self.tree.get_children())
+        mapping = db_utils.get_status_mapping()
+        for keyword, statuses in mapping.items():
+            for status in statuses:
+                self.tree.insert("", "end", values=(keyword, status))
+
+    def add_mapping(self):
+        keyword = self.keyword_entry.get().strip().upper()
+        status = self.status_entry.get().strip().upper()
+        
+        if keyword and status:
+            if db_utils.add_status_mapping(keyword, status):
+                messagebox.showinfo("Success", "Status mapping added successfully!")
+                self.populate_treeview()
+                self.keyword_entry.delete(0, "end")
+                self.status_entry.delete(0, "end")
+            else:
+                messagebox.showerror("Error", "Failed to add status mapping")
+        else:
+            messagebox.showerror("Error", "Please enter both keyword and status")
+
+    def delete_mapping(self):
+        selection = self.tree.selection()
+        if selection:
+            item = self.tree.item(selection[0])
+            keyword, status = item["values"]
+            
+            if messagebox.askyesno("Confirm", f"Delete mapping for {keyword} - {status}?"):
+                if db_utils.delete_status_mapping(keyword, status):
+                    messagebox.showinfo("Success", "Status mapping deleted successfully!")
+                    self.populate_treeview()
+                else:
+                    messagebox.showerror("Error", "Failed to delete status mapping")
+        else:
+            messagebox.showerror("Error", "Please select a mapping to delete")

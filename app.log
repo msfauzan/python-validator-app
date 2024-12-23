@@ -5,3 +5,6 @@
 2024-12-20 09:45:39,420 - ERROR - Database error: no such table: ref_mapping_penerima
 2024-12-20 09:45:41,301 - ERROR - Database error: no such table: ref_mapping_pembayar
 2024-12-20 09:45:42,832 - ERROR - Error getting bank codes: no such table: bank_codes
+2024-12-20 16:25:20,101 - ERROR - Database error: no such table: ref_mapping_status
+2024-12-20 16:29:34,731 - ERROR - Error in manage_status: name 'ManageStatusMappingWindow' is not defined
+2024-12-20 16:30:21,958 - ERROR - Error in manage_status: name 'ManageStatusMappingWindow' is not defined

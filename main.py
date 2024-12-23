@@ -6,7 +6,8 @@ import json
 import ttkbootstrap as ttkb
 from data_validator import DataValidator
 from tool_tip import ToolTip
-from windows import ManageMappingWindow, ManageBankCodesWindow
+from windows import ManageMappingWindow, ManageBankCodesWindow, ManageStatusMappingWindow
+import subprocess
 
 # Load konfigurasi
 config = db_utils.load_config()
@@ -57,6 +58,7 @@ class App:
         # Tambahkan recent files
         self.recent_files = self.load_recent_files()
         self.last_validated_file = None  # Initialize variable to store the last validated file
+        self.last_validated_folder = None  # Tambahkan variabel folder
 
     def set_icon(self):
         """Set icon untuk window."""
@@ -75,8 +77,8 @@ class App:
         menubar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Open File (Ctrl+O)", command=self.process_file)
         file_menu.add_separator()
-        file_menu.add_command(label="Recent Validated File", command=self.open_validated_file, state="disabled")
-        self.open_validated_file_menu = file_menu  # Store reference to enable later
+        file_menu.add_command(label="Recent Validated Folder", command=self.open_validated_folder, state="disabled")
+        self.open_validated_folder_menu = file_menu  # Store reference to enable later
         file_menu.add_command(label="Exit (Alt+F4)", command=self.root.quit)
 
         # Database Menu
@@ -84,6 +86,14 @@ class App:
         menubar.add_cascade(label="Database", menu=db_menu)
         db_menu.add_command(label="Manage Mapping (Ctrl+M)", command=self.manage_mapping)
         db_menu.add_command(label="Manage Bank Codes (Ctrl+B)", command=self.manage_bank_codes)
+        db_menu.add_command(label="Manage Status (Ctrl+S)", command=self.manage_status)  # Add new menu item
+
+        # Manage Menu
+        manage_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Manage", menu=manage_menu)
+        manage_menu.add_command(label="Manage Category Mapping", command=lambda: ManageMappingWindow(self.root))
+        manage_menu.add_command(label="Manage Bank Codes", command=lambda: ManageBankCodesWindow(self.root))
+        manage_menu.add_command(label="Manage Status Mapping", command=lambda: ManageStatusMappingWindow(self.root))
 
         # Help Menu
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -100,6 +110,7 @@ class App:
         self.root.bind('<Control-o>', lambda e: self.process_file())
         self.root.bind('<Control-m>', lambda e: self.manage_mapping())
         self.root.bind('<Control-b>', lambda e: self.manage_bank_codes())
+        self.root.bind('<Control-s>', lambda e: self.manage_status())  # Add new shortcut
 
     def create_interface(self):
         """Membuat interface yang lebih user-friendly."""
@@ -195,6 +206,16 @@ class App:
         codes_btn.grid(row=0, column=1, padx=5)
         ToolTip(codes_btn, "Kelola data kode bank")
 
+        # Add new button for managing status mappings
+        status_btn = ttkb.Button(
+            db_btn_frame,
+            text="Kelola Status (Ctrl+S)",
+            command=self.manage_status,
+            style="Action.TButton"
+        )
+        status_btn.grid(row=0, column=2, padx=5)
+        ToolTip(status_btn, "Kelola data mapping status")
+
         # Help section
         help_frame = ttkb.Frame(main_frame)
         help_frame.grid(row=4, column=0, sticky="ew", pady=(15, 0))
@@ -254,13 +275,14 @@ Panduan Penggunaan Data Validation Tool
    - Ctrl+O : Buka file
    - Ctrl+M : Kelola mapping
    - Ctrl+B : Kelola kode bank
+   - Ctrl+S : Kelola status mapping
    - F1     : Bantuan
 
 4. Hasil Validasi:
    - File hasil akan disimpan dengan suffix "_validated"
    - Sel yang perlu perhatian akan ditandai kuning
    - Hover pada sel untuk melihat saran perubahan
-   - Klik File > Recent Validated File untuk membuka file terakhir
+   - Klik File > Recent Validated Folder untuk membuka folder hasil validasi terakhir
         """
         help_window = tk.Toplevel(self.root)
         help_window.title("Bantuan Penggunaan")
@@ -283,7 +305,7 @@ Panduan Penggunaan Data Validation Tool
         """Menampilkan dialog About."""
         messagebox.showinfo(
             "About",
-            "Data Validation Tool\nVersion 1.0\n\n" +
+            "\nVersion 1.0\n\n" +
             "Shortcuts:\n" +
             "Ctrl+O: Open File\n" +
             "Ctrl+M: Manage Mapping\n" +
@@ -312,7 +334,8 @@ Panduan Penggunaan Data Validation Tool
             try:
                 output_file, error_count, validation_results = self.validator.process_file(input_file)
                 self.last_validated_file = output_file  # Store the validated file path
-                self.open_validated_file_menu.entryconfig("Recent Validated File", state="normal")  # Enable menu item
+                self.last_validated_folder = os.path.dirname(output_file)  # Simpan folder
+                self.open_validated_folder_menu.entryconfig("Recent Validated Folder", state="normal")  # Enable menu item
                 
                 detail_message = "Validation Results:\n\n"
                 for result in validation_results:
@@ -470,12 +493,37 @@ Panduan Penggunaan Data Validation Tool
             messagebox.showerror("Error", f"Gagal membuka Manage Bank Codes: {str(e)}")
             db_utils.log_error(f"Error in manage_bank_codes: {str(e)}")
 
-    def open_validated_file(self):
-        """Membuka file Excel hasil validasi."""
-        if self.last_validated_file and os.path.exists(self.last_validated_file):
-            os.startfile(self.last_validated_file)
+    def manage_status(self, event=None):
+        """Membuka window Manage Status Mapping."""
+        try:
+            status_window = ManageStatusMappingWindow(self.root)
+            status_window.transient(self.root)  # Set parent window
+            status_window.grab_set()  # Make window modal
+            
+            # Center the window
+            window_width = 600
+            window_height = 400
+            screen_width = status_window.winfo_screenwidth()
+            screen_height = status_window.winfo_screenheight()
+            x = (screen_width - window_width) // 2
+            y = (screen_height - window_height) // 2
+            status_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+            
+            self.root.wait_window(status_window)  # Wait for window to close
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Gagal membuka Manage Status: {str(e)}")
+            db_utils.log_error(f"Error in manage_status: {str(e)}")
+
+    def open_validated_folder(self):
+        """Buka folder hasil validasi."""
+        if self.last_validated_folder and os.path.exists(self.last_validated_folder):
+            try:
+                os.startfile(self.last_validated_folder)  # Windows
+            except AttributeError:
+                subprocess.call(["xdg-open", self.last_validated_folder])  # Linux
         else:
-            messagebox.showerror("Error", "Tidak ada file validasi yang tersedia untuk dibuka.")
+            messagebox.showwarning("Warning", "No validated folder found or folder does not exist.")
 
 if __name__ == "__main__":
     root = ttkb.Window(themename="cosmo")
