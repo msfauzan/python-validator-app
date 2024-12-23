@@ -137,6 +137,7 @@ def insert_initial_data():
                 "CONSULATE GENERAL": "B0",
                 "EMBASSY": "B0",
                 "GOVERNMENT": "B0",
+                "Lembaga Penyimpan Simpanan": "B0",
                 "Bank Indonesia": "C0",
                 "Federal Reserve": "C0",
                 "The FED": "C0",
@@ -176,7 +177,6 @@ def insert_initial_data():
                 "World Bank": "F1",
                 "WB": "F1",
                 "United Nation": "F2",
-                "UN": "F2",
                 "WHO": "F2",
                 "UNHCR": "F2",
                 "FAO": "F2",
@@ -210,7 +210,6 @@ def insert_initial_data():
                 "Institut": "Z9",
                 "Institute": "Z9",
                 "Yayasan": "Z9",
-                "Lembaga": "Z9",
                 "Perkumpulan": "Z9",
                 "Gereja": "Z9",
                 "Church": "Z9",
@@ -503,7 +502,7 @@ def delete_status_mapping(keyword, status):
         return False
 
 # Panggil fungsi ini untuk membuat database (cukup sekali saja)
-# create_database()
+create_database()
 
 # Panggil fungsi ini untuk insert data (cukup sekali saja, setelah create_database)
-# insert_initial_data()
+insert_initial_data()

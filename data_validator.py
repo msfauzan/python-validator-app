@@ -32,6 +32,15 @@ class DataValidator:
         self.stt_category_exceptions = config.get("validation", {}).get("stt_category_exceptions", {})
         self.status_mapping = db_utils.get_status_mapping()
 
+    def reload_reference_data(self):
+        """Reload mapping and bank codes from database."""
+        self.reference_mapping = {
+            "penerima": db_utils.get_mapping_data("ref_mapping_penerima"),
+            "pembayar": db_utils.get_mapping_data("ref_mapping_pembayar"),
+        }
+        self.bank_codes = db_utils.get_bank_codes()
+        self.status_mapping = db_utils.get_status_mapping()
+
     def get_suggested_status(self, name):
         """Get suggested status based on keywords in the name."""
         name = str(name).upper()
@@ -469,31 +478,33 @@ class DataValidator:
                 suggested_status_penerima = self.get_suggested_status(row["nama_penerima"])
                 current_status_penerima = str(row.get("status_penerima", "")).upper()
                 
-                if suggested_status_penerima and current_status_penerima not in suggested_status_penerima:
-                    validation_results.append({
-                        "row": idx + 2,
-                        "column": "status_penerima",
-                        "current": current_status_penerima,
-                        "suggested": "/".join(suggested_status_penerima),
-                        "name": row["nama_penerima"],
-                        "bank_code": row.get("cKdBank", ""),
-                        "status": current_status_penerima
-                    })
+                if "LTD" not in str(row["nama_penerima"]).upper():
+                    if suggested_status_penerima and current_status_penerima not in suggested_status_penerima:
+                        validation_results.append({
+                            "row": idx + 2,
+                            "column": "status_penerima",
+                            "current": current_status_penerima,
+                            "suggested": "/".join(suggested_status_penerima),
+                            "name": row["nama_penerima"],
+                            "bank_code": row.get("cKdBank", ""),
+                            "status": current_status_penerima
+                        })
 
                 # Check status pembayar
                 suggested_status_pembayar = self.get_suggested_status(row["nama_pembayar"])
                 current_status_pembayar = str(row.get("status_pembayar", "")).upper()
                 
-                if suggested_status_pembayar and current_status_pembayar not in suggested_status_pembayar:
-                    validation_results.append({
-                        "row": idx + 2,
-                        "column": "status_pembayar",
-                        "current": current_status_pembayar,
-                        "suggested": "/".join(suggested_status_pembayar),
-                        "name": row["nama_pembayar"],
-                        "bank_code": row.get("cKdBank", ""),
-                        "status": current_status_pembayar
-                    })
+                if "LTD" not in str(row["nama_pembayar"]).upper():
+                    if suggested_status_pembayar and current_status_pembayar not in suggested_status_pembayar:
+                        validation_results.append({
+                            "row": idx + 2,
+                            "column": "status_pembayar",
+                            "current": current_status_pembayar,
+                            "suggested": "/".join(suggested_status_pembayar),
+                            "name": row["nama_pembayar"],
+                            "bank_code": row.get("cKdBank", ""),
+                            "status": current_status_pembayar
+                        })
 
             writer = pd.ExcelWriter(output_file, engine="openpyxl")
             output_df.to_excel(writer, index=False)

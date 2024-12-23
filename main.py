@@ -37,7 +37,7 @@ class App:
             raise ValueError("root harus instance dari ttkb.Window")
         self.root = root
         self.style = ttkb.Style("cosmo")
-        self.root.title("Data Validator")
+        self.root.title("LLD-Bank Track+")
         
         try:
             self.validator = DataValidator(FUZZY_MATCH_THRESHOLD)
@@ -125,7 +125,7 @@ class App:
         # Create a larger, bold title label centered in the window
         title_label = ttkb.Label(
             welcome_frame,
-            text="Data Validation Tool",
+            text="LLD-Bank Track+",
             style="Primary.TLabel",
             font=("Arial", 16, "bold")
         )
@@ -142,7 +142,7 @@ class App:
         
         self.file_button = ttkb.Button(
             file_frame,
-            text="Pilih File Excel (Ctrl+O)",
+            text="Choose Excel File (Ctrl+O)",
             command=self.process_file,
             style="Action.TButton"
         )
@@ -164,10 +164,10 @@ class App:
                 ToolTip(btn, f"Buka file: {recent_file}")
 
         # Progress Section dengan informasi detail
-        progress_frame = ttkb.Labelframe(main_frame, text="Status Proses", padding=15)
+        progress_frame = ttkb.Labelframe(main_frame, text="Processing Status", padding=15)
         progress_frame.grid(row=2, column=0, sticky="ew", pady=(0, 15))
 
-        self.status_label = ttkb.Label(progress_frame, text="Siap memproses file")
+        self.status_label = ttkb.Label(progress_frame, text="Ready to process file")
         self.status_label.grid(row=0, column=0, sticky="w", pady=(0, 5))
 
         progress_info_frame = ttkb.Frame(progress_frame)
@@ -182,7 +182,7 @@ class App:
         self.progress_bar.grid(row=0, column=0, sticky="ew", padx=(0, 10))
 
         # Database Management dengan grouping yang lebih baik
-        db_frame = ttkb.Labelframe(main_frame, text="Pengaturan Data", padding=15)
+        db_frame = ttkb.Labelframe(main_frame, text="Data Setup", padding=15)
         db_frame.grid(row=3, column=0, sticky="ew")
 
         db_btn_frame = ttkb.Frame(db_frame)
@@ -190,7 +190,7 @@ class App:
 
         mapping_btn = ttkb.Button(
             db_btn_frame,
-            text="Kelola Mapping (Ctrl+M)",
+            text="Manage Categorical Mapping",
             command=self.manage_mapping,
             style="Action.TButton"
         )
@@ -199,7 +199,7 @@ class App:
 
         codes_btn = ttkb.Button(
             db_btn_frame,
-            text="Kelola Kode Bank (Ctrl+B)",
+            text="Manage Bank Codes",
             command=self.manage_bank_codes,
             style="Action.TButton"
         )
@@ -209,7 +209,7 @@ class App:
         # Add new button for managing status mappings
         status_btn = ttkb.Button(
             db_btn_frame,
-            text="Kelola Status (Ctrl+S)",
+            text="Manage Status Mapping",
             command=self.manage_status,
             style="Action.TButton"
         )
@@ -222,7 +222,7 @@ class App:
         
         help_btn = ttkb.Button(
             help_frame,
-            text="Bantuan (F1)",
+            text="Help (F1)",
             command=self.show_help,
             style="Action.TButton"
         )
@@ -524,6 +524,13 @@ Panduan Penggunaan Data Validation Tool
                 subprocess.call(["xdg-open", self.last_validated_folder])  # Linux
         else:
             messagebox.showwarning("Warning", "No validated folder found or folder does not exist.")
+
+    def add_new_category(self, keyword, category):
+        """Contoh penambahan kategori baru ke DB, lalu reload."""
+        success = db_utils.add_mapping_data("ref_mapping_penerima", keyword, category)
+        if success:
+            self.validator.reload_reference_data()
+            messagebox.showinfo("Info", f"Berhasil menambah kategori {category} untuk '{keyword}'")
 
 if __name__ == "__main__":
     root = ttkb.Window(themename="cosmo")

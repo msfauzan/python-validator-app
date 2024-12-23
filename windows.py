@@ -92,6 +92,9 @@ class ManageMappingWindow(ttkb.Toplevel):
 
     def populate_treeview(self):
         """Mengisi Treeview dengan data mapping."""
+        if not self.tree.winfo_exists():
+            return  # Jika Treeview sudah tidak ada, keluar dari fungsi
+
         self.tree.delete(*self.tree.get_children())
         mapping_data = db_utils.get_mapping_data("ref_mapping_penerima")
 
