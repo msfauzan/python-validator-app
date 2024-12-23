@@ -215,6 +215,8 @@ def insert_initial_data():
                 "Church": "Z9",
                 "Organisasi": "Z9",
                 "Foundation": "Z9",
+                "SPAN": "B0",  # Tambahkan mapping untuk SPAN
+                "KPPN": "B0",  # Tambahkan mapping untuk KPPN
             }
             for keyword, category in initial_mapping.items():
                 cursor.execute(

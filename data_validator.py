@@ -19,7 +19,7 @@ COL_TAHUN = "tahun"
 COL_BULAN = "bulan"
 
 class DataValidator:
-    def __init__(self, fuzzy_match_threshold=0.75):
+    def __init__(self, fuzzy_match_threshold=0.9):
         self.reference_mapping = {
             "penerima": db_utils.get_mapping_data("ref_mapping_penerima"),
             "pembayar": db_utils.get_mapping_data("ref_mapping_pembayar"),
@@ -319,7 +319,7 @@ class DataValidator:
                 # Add check for STT category exceptions before the main validation logic
                 elif self.is_category_allowed_for_stt(row.get("stt", ""), row.get("kategori_penerima", "")):
                     # Skip validation for kategori_penerima if it's allowed for this STT
-                    suggested_category_penerima = None
+                    suggested_category_penerima = row.get("kategori_penerima", "")  # Keep original validation for penerima
                     suggested_category_pembayar = row.get("kategori_pembayar", "")  # Keep original validation for pembayar
                 else:
                     if (
