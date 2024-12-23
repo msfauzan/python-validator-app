@@ -502,7 +502,7 @@ def delete_status_mapping(keyword, status):
         return False
 
 # Panggil fungsi ini untuk membuat database (cukup sekali saja)
-create_database()
+# create_database()
 
 # Panggil fungsi ini untuk insert data (cukup sekali saja, setelah create_database)
-insert_initial_data()
+# insert_initial_data()

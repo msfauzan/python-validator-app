@@ -19,7 +19,7 @@ COL_TAHUN = "tahun"
 COL_BULAN = "bulan"
 
 class DataValidator:
-    def __init__(self, fuzzy_match_threshold=0.9):
+    def __init__(self, fuzzy_match_threshold=0.75):
         self.reference_mapping = {
             "penerima": db_utils.get_mapping_data("ref_mapping_penerima"),
             "pembayar": db_utils.get_mapping_data("ref_mapping_pembayar"),
@@ -44,6 +44,10 @@ class DataValidator:
     def get_suggested_status(self, name):
         """Get suggested status based on keywords in the name."""
         name = str(name).upper()
+        # Periksa dulu jika nama lengkap ada di status_mapping 
+        if name in self.status_mapping:
+            return list(self.status_mapping[name])
+
         suggested_statuses = set()
         
         for keyword, statuses in self.status_mapping.items():
@@ -212,6 +216,7 @@ class DataValidator:
                 - error_count (int): Jumlah error yang ditemukan.
                 - validation_results (list): List hasil validasi.
         """
+        self.reload_reference_data()  # Pastikan memuat ulang mapping setiap kali proses
         try:
             # Validasi file exists dan extension
             if not os.path.exists(input_file):

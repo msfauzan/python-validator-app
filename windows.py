@@ -12,6 +12,7 @@ class ManageMappingWindow(ttkb.Toplevel):
         self.sort_order = {"column": "Keyword", "direction": "asc"}
         self.minsize(600, 600)
         self.resizable(True, True)
+        self.app = parent  # Store reference to parent App instance
         self.create_widgets()
         self.populate_treeview()
 
@@ -120,6 +121,9 @@ class ManageMappingWindow(ttkb.Toplevel):
                 self.populate_treeview()
                 self.keyword_entry.delete(0, tk.END)
                 self.category_combobox.set("")
+                # Update validator reference data
+                if hasattr(self.app, 'validator'):
+                    self.app.validator.reload_reference_data()
             else:
                 self.show_error_message(
                     "Failed to add mapping. Keyword might already exist."
@@ -142,6 +146,9 @@ class ManageMappingWindow(ttkb.Toplevel):
                 self.populate_treeview()
                 self.keyword_entry.delete(0, tk.END)
                 self.category_combobox.set("")
+                # Update validator reference data
+                if hasattr(self.app, 'validator'):
+                    self.app.validator.reload_reference_data()
             else:
                 self.show_error_message("Please select a category.")
         else:
@@ -160,6 +167,9 @@ class ManageMappingWindow(ttkb.Toplevel):
                 db_utils.delete_mapping_data("ref_mapping_pembayar", keyword)
                 self.show_success_message("Mapping deleted successfully!")
                 self.populate_treeview()
+                # Update validator reference data
+                if hasattr(self.app, 'validator'):
+                    self.app.validator.reload_reference_data()
         else:
             self.show_error_message("Please select an item to delete.")
 
