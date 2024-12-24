@@ -149,6 +149,7 @@ def insert_initial_data():
                 "BPD": "C9",
                 "Bank Pembangunan Daerah": "C9",
                 "Indonesia exim bank": "D0",
+                "EXIMBANK": "D0",
                 "insurance": "D0",
                 "reinsurance": "D0",
                 "asuransi": "D0",
@@ -215,8 +216,6 @@ def insert_initial_data():
                 "Church": "Z9",
                 "Organisasi": "Z9",
                 "Foundation": "Z9",
-                "SPAN": "B0",  # Tambahkan mapping untuk SPAN
-                "KPPN": "B0",  # Tambahkan mapping untuk KPPN
             }
             for keyword, category in initial_mapping.items():
                 cursor.execute(

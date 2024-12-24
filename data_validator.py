@@ -44,23 +44,32 @@ class DataValidator:
     def get_suggested_status(self, name):
         """Get suggested status based on keywords in the name."""
         name = str(name).upper()
-        # Periksa dulu jika nama lengkap ada di status_mapping 
-        if name in self.status_mapping:
-            return list(self.status_mapping[name])
-
-        suggested_statuses = set()
         
+        # Daftar kata-kata yang bisa diabaikan jika ada keyword negara
+        company_words = {"PT", "PERSERO", "TBK", "LTD", "CV", "KOPERASI"}
+        
+        # Cek dulu keyword negara (prioritas tertinggi)
+        country_statuses = set()
         for keyword, statuses in self.status_mapping.items():
-            if keyword in name:
-                suggested_statuses.update(statuses)
+            if self.is_standalone_word(keyword, name):
+                for status in statuses:
+                    # Jika menemukan status negara
+                    if status not in ["ID", "N1"]:
+                        country_statuses.add(status)
 
-        # Tambahan logika: jika ada ID atau N1 di suggested_statuses untuk nama PT/LTD/CV/KOPERASI, 
-        # maka keduanya dianggap benar
-        relevant_words = ["PT", "LTD", "CV", "KOPERASI"]
-        if any(w in name for w in relevant_words) and ("ID" in suggested_statuses or "N1" in suggested_statuses):
-            suggested_statuses.update(["ID", "N1"])
-                
-        return list(suggested_statuses)
+        # Jika ada status negara, langsung return tanpa mengecek ID/N1
+        if country_statuses:
+            return list(country_statuses)
+            
+        # Jika tidak ada status negara, cek untuk ID/N1
+        id_statuses = set()
+        # Hanya cek kata-kata yang menunjukkan ID/N1 jika tidak ada status negara
+        for keyword in company_words:
+            if self.is_standalone_word(keyword, name):
+                id_statuses.update(["ID", "N1"])
+                break
+
+        return list(id_statuses) if id_statuses else []
 
     def validate_bank_code(self, bank_name, bank_code):
         """
@@ -206,6 +215,7 @@ class DataValidator:
     def is_standalone_word(self, word, text):
         """
         Memeriksa apakah sebuah kata berdiri sendiri dalam teks.
+        Mendukung pengecekan multi-word keyword seperti "HONG KONG".
         
         Args:
             word (str): Kata yang dicari
@@ -218,10 +228,18 @@ class DataValidator:
         word = word.upper()
         text = text.upper()
         
+        # Bersihkan teks dari karakter khusus dan strip
+        text = re.sub(r'[^\w\s]', ' ', text)
+        # Normalisasi spasi menjadi single space
+        text = ' '.join(text.split())
+        
         # Tambahkan spasi di awal dan akhir teks untuk mempermudah pengecekan
         text = f" {text} "
         # Tambahkan spasi di awal dan akhir kata untuk mencari kata yang berdiri sendiri
         search_word = f" {word} "
+        
+        # Normalisasi multiple spaces dalam search word
+        search_word = ' '.join(search_word.split())
         
         return search_word in text
 
@@ -313,8 +331,34 @@ class DataValidator:
             validation_results = []
 
             for idx, row in df.iterrows():
-                is_penerima_bank = "BANK" in str(row["nama_penerima"]).upper()
-                is_pembayar_bank = "BANK" in str(row["nama_pembayar"]).upper()
+                # Check N1 first, if true then skip all other checks
+                if self.is_n1_category(row.get("stt", "")):
+                    # If N1, force both categories and statuses to N1
+                    if row["kategori_penerima"] != "N1":
+                        validation_results.append({
+                            "row": idx + 2,
+                            "column": "kategori_penerima",
+                            "current": row["kategori_penerima"],
+                            "suggested": "N1",
+                            "name": row["nama_penerima"],
+                            "bank_code": row.get("cKdBank", ""),
+                            "status": "N1",
+                        })
+                    if row["kategori_pembayar"] != "N1":
+                        validation_results.append({
+                            "row": idx + 2,
+                            "column": "kategori_pembayar",
+                            "current": row["kategori_pembayar"],
+                            "suggested": "N1",
+                            "name": row["nama_pembayar"],
+                            "bank_code": row.get("cKdBank", ""),
+                            "status": "N1",
+                        })
+                    continue  # Skip all other validation checks for this row
+
+                # Regular validation logic starts here
+                is_penerima_bank = self.is_standalone_word("BANK", row["nama_penerima"])
+                is_pembayar_bank = self.is_standalone_word("BANK", row["nama_pembayar"])
 
                 is_valid_bank_code_penerima = self.validate_bank_code(
                     row["nama_penerima"], row.get("cKdBank", "")
