@@ -33,7 +33,7 @@ class DataValidator:
         self.status_mapping = db_utils.get_status_mapping()
 
     def reload_reference_data(self):
-        """Reload mapping and bank codes from database."""
+        """Reload mapping dan bank codes dari database."""
         self.reference_mapping = {
             "penerima": db_utils.get_mapping_data("ref_mapping_penerima"),
             "pembayar": db_utils.get_mapping_data("ref_mapping_pembayar"),
@@ -48,6 +48,15 @@ class DataValidator:
         # Daftar kata-kata yang bisa diabaikan jika ada keyword negara
         company_words = {"PT", "PERSERO", "TBK", "LTD", "CV", "KOPERASI"}
         
+        # Daftar kata pendek yang harus persis berdiri sendiri
+        short_keywords = {"PT", "WHO", "UN", "TBK", "CV", "LTD", "INC", "CORP", "CO", "LLC", "PTE", "PVT", "BV", "NV", "SA", "GMBH", "AG", "SL", "SRL", "SAS", "SARL", "SPA", "SRL", "SNC", "SCS", "SCA", "SAR", "SASU", "SARL", "SARLU"}
+
+        # Jika keyword pendek ditemukan sekadar sebagai substring, abaikan
+        for kw in short_keywords:
+            if kw in name and not self.is_standalone_word(kw, name):
+                # Jika ternyata hanya substring, kita lanjut tanpa men-flag
+                return []
+
         # Cek dulu keyword negara (prioritas tertinggi)
         country_statuses = set()
         for keyword, statuses in self.status_mapping.items():
@@ -95,18 +104,6 @@ class DataValidator:
 
         reference_bank_name = self.bank_codes[bank_code].upper()
         bank_name = str(bank_name).upper() if not pd.isna(bank_name) else ""
-
-        # def clean_bank_name(name):
-        #     name = re.sub(r"[^\w\s]", " ", name)
-        #     name = " ".join(name.split())
-        #     common_words = ["PT", "BANK", "PERSERO", "TBK"]
-        #     for word in common_words:
-        #         name = name.replace(f" {word} ", " ")
-        #         if name.startswith(f"{word} "):
-        #             name = name[len(word) :].strip()
-        #         if name.endswith(f" {word}"):
-        #             name = name[: -len(word)].strip()
-        #     return name.strip()
 
         def clean_bank_name(name):
             name = str(name).upper()
@@ -230,7 +227,7 @@ class DataValidator:
     def is_standalone_word(self, word, text):
         """
         Memeriksa apakah sebuah kata berdiri sendiri dalam teks.
-        Mendukung pengecekan multi-word keyword seperti "HONG KONG".
+        Mendukung pengecekan multi-word keyword dan kasus khusus untuk singkatan.
         
         Args:
             word (str): Kata yang dicari
@@ -239,24 +236,51 @@ class DataValidator:
         Returns:
             bool: True jika kata berdiri sendiri, False jika bagian dari kata lain
         """
+        if not text or not word:
+            return False
+            
         # Ubah ke uppercase untuk konsistensi
         word = word.upper()
         text = text.upper()
+
+        # Daftar kata pendek yang harus persis berdiri sendiri
+        short_keywords = {
+            "PT", "WHO", "UN", "TBK", "CV", "LTD", "INC", "CORP", "CO", 
+            "LLC", "PTE", "PVT", "BV", "NV", "SA", "GMBH", "AG", "SL", 
+            "SRL", "SAS", "SARL", "SPA", "SNC", "SCS", "SCA", "SAR", 
+            "SASU", "SARLU"
+        }
         
-        # Bersihkan teks dari karakter khusus dan strip
-        text = re.sub(r'[^\w\s]', ' ', text)
-        # Normalisasi spasi menjadi single space
-        text = ' '.join(text.split())
-        
-        # Tambahkan spasi di awal dan akhir teks untuk mempermudah pengecekan
-        text = f" {text} "
-        # Tambahkan spasi di awal dan akhir kata untuk mencari kata yang berdiri sendiri
-        search_word = f" {word} "
-        
-        # Normalisasi multiple spaces dalam search word
-        search_word = ' '.join(search_word.split())
-        
-        return search_word in text
+        # Jika keyword adalah kata pendek, lakukan pengecekan lebih ketat
+        if word in short_keywords:
+            # Bersihkan teks dari karakter khusus kecuali underscore
+            text = re.sub(r'[^\w\s]', ' ', text)
+            # Normalisasi spasi menjadi single space
+            text = ' '.join(text.split())
+            # Tambahkan spasi di awal dan akhir untuk memudahkan pengecekan
+            text = f" {text} "
+            
+            # Cari semua kemunculan kata dengan word boundaries
+            matches = re.finditer(fr'\b{re.escape(word)}\b', text)
+            
+            for match in matches:
+                # Ambil karakter sebelum dan sesudah match
+                start, end = match.span()
+                # Periksa apakah kata benar-benar berdiri sendiri
+                if text[start-1] == " " and text[end] == " ":
+                    return True
+            return False
+            
+        # Untuk kata-kata normal atau multi-word keywords
+        else:
+            # Bersihkan teks dari karakter khusus
+            text = re.sub(r'[^\w\s]', ' ', text)
+            # Normalisasi spasi
+            text = ' '.join(text.split())
+            # Tambahkan spasi di awal dan akhir
+            text = f" {text} "
+            # Cari kata dengan spasi di sekitarnya
+            return f" {word} " in text
 
     def process_file(self, input_file):
         """
@@ -371,7 +395,6 @@ class DataValidator:
                         })
                     continue  # Skip all other validation checks for this row
 
-                # --- Tambahkan kembali logika sama ---
                 is_penerima_bank = (
                     "BANK" in str(row[COL_NAMA_PENERIMA]).upper() 
                     and row[COL_KATEGORI_PENERIMA] not in ["F1", "C0"]
@@ -413,15 +436,6 @@ class DataValidator:
                 suggested_category_penerima = None
                 suggested_category_pembayar = None
 
-                # # Logika untuk kategori C2 (direvisi)
-                # if is_penerima_bank and is_pembayar_bank:  # Kondisi 1: Keduanya bank
-                #     if is_same_bank:  # Kondisi 2: Bank yang sama
-                #         if is_valid_bank_code_penerima:  # Kondisi 3: Sandi bank penerima valid
-                #             if suggested_category_pembayar == "C1":  # Kondisi 4: Kategori penerima C1
-                #                 if pembayar_status != "ID":  # Kondisi 5: Status pembayar non-ID
-                #                     suggested_category_pembayar = "C2"
-
-                # Lanjutkan dengan pengecekan kategori lainnya jika bukan C2
                 if suggested_category_pembayar is None:
                     # Add check for STT category exceptions before the main validation logic
                     if self.is_category_allowed_for_stt(row.get("stt", ""), row.get("kategori_penerima", "")):
@@ -512,27 +526,6 @@ class DataValidator:
                                         suggested_category_pembayar = "C2"
                                 else:
                                     suggested_category_pembayar = "C9"
-
-                            # if (
-                            #     is_penerima_bank
-                            #     and is_pembayar_bank
-                            #     and is_same_bank
-                            # ):
-                            #     if (
-                            #         is_valid_bank_code_penerima
-                            #         or is_valid_bank_code_pembayar
-                            #     ):
-                            #         if penerima_status != "ID" or pembayar_status != "ID":
-                            #             if (
-                            #                 suggested_category_penerima != "C1"
-                            #                 and suggested_category_penerima != "F1"
-                            #             ):
-                            #                 suggested_category_penerima = "C2"
-                            #             if (
-                            #                 suggested_category_pembayar != "C1"
-                            #                 and suggested_category_pembayar != "F1"
-                            #             ):
-                            #                 suggested_category_pembayar = "C2"
 
                         if suggested_category_penerima is None and not is_penerima_bank:
                             for keyword, expected_category in self.reference_mapping["penerima"].items():
