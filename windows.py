@@ -34,6 +34,11 @@ class ManageMappingWindow(ttkb.Toplevel):
         )
         search_button.pack(side=ttkb.LEFT, padx=(5, 0))
 
+        reset_button = ttkb.Button(
+            search_frame, text="Reset", command=self.reset_search
+        )
+        reset_button.pack(side=ttkb.LEFT, padx=(5, 0))
+
         self.tree = ttkb.Treeview(
             main_frame, columns=("Keyword", "Category"), show="headings"
         )
@@ -90,6 +95,11 @@ class ManageMappingWindow(ttkb.Toplevel):
         self.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(1, weight=1)
+
+    def reset_search(self):
+        """Reset pencarian dan menampilkan semua data."""
+        self.search_entry.delete(0, tk.END)
+        self.populate_treeview()
 
     def populate_treeview(self):
         """Mengisi Treeview dengan data mapping."""
@@ -209,6 +219,9 @@ class ManageBankCodesWindow(ttkb.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title("Manage Bank Codes")
+        self.sort_order = {"column": "Code", "direction": "asc"}
+        self.minsize(600, 600)
+        self.resizable(True, True)
         self.create_widgets()
         self.populate_treeview()
 
@@ -217,62 +230,108 @@ class ManageBankCodesWindow(ttkb.Toplevel):
         main_frame = ttkb.Frame(self, padding="10")
         main_frame.grid(row=0, column=0, sticky=(ttkb.W, ttkb.E, ttkb.N, ttkb.S))
 
+        # Add search frame
+        search_frame = ttkb.Frame(main_frame)
+        search_frame.grid(row=0, column=0, sticky=(ttkb.W, ttkb.E), pady=(0, 10))
+
+        ttkb.Label(search_frame, text="Search:").pack(side=ttkb.LEFT, padx=(0, 5))
+        self.search_entry = ttkb.Entry(search_frame)
+        self.search_entry.pack(side=ttkb.LEFT, expand=True, fill=ttkb.X)
+        self.search_entry.bind("<Return>", self.search_bank_codes)
+
+        search_button = ttkb.Button(
+            search_frame, text="Search", command=self.search_bank_codes
+        )
+        search_button.pack(side=ttkb.LEFT, padx=(5, 0))
+
+        reset_button = ttkb.Button(
+            search_frame, text="Reset", command=self.reset_search
+        )
+        reset_button.pack(side=ttkb.LEFT, padx=(5, 0))
+
+        # Treeview
         self.tree = ttkb.Treeview(
             main_frame, columns=("Code", "Name"), show="headings"
         )
-        self.tree.grid(row=0, column=0, sticky=(ttkb.W, ttkb.E, ttkb.N, ttkb.S))
+        self.tree.grid(row=1, column=0, sticky=(ttkb.W, ttkb.E, ttkb.N, ttkb.S))
 
-        self.tree.heading("Code", text="Code")
-        self.tree.heading("Name", text="Name")
+        self.tree.heading(
+            "Code", text="Code", command=lambda: self.sort_by_column("Code")
+        )
+        self.tree.heading(
+            "Name", text="Name", command=lambda: self.sort_by_column("Name")
+        )
 
         self.tree.column("Code", width=100, anchor="center")
-        self.tree.column("Name", width=200, anchor="center")
+        self.tree.column("Name", width=200)
 
         scrollbar = ttkb.Scrollbar(
             main_frame, orient="vertical", command=self.tree.yview
         )
-        scrollbar.grid(row=0, column=1, sticky=(ttkb.N, ttkb.S))
+        scrollbar.grid(row=1, column=1, sticky=(ttkb.N, ttkb.S))
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        ttkb.Label(main_frame, text="Code:").grid(
-            row=1, column=0, sticky=(ttkb.W), padx=5, pady=5
-        )
+        # Entry widgets
+        ttkb.Label(main_frame, text="Code:").grid(row=2, column=0, sticky=ttkb.W, padx=5, pady=5)
         self.code_entry = ttkb.Entry(main_frame)
-        self.code_entry.grid(row=2, column=0, sticky=(ttkb.W, ttkb.E), padx=5, pady=5)
+        self.code_entry.grid(row=3, column=0, sticky=(ttkb.W, ttkb.E), padx=5, pady=5)
 
-        ttkb.Label(main_frame, text="Name:").grid(
-            row=3, column=0, sticky=(ttkb.W), padx=5, pady=5
-        )
+        ttkb.Label(main_frame, text="Name:").grid(row=4, column=0, sticky=ttkb.W, padx=5, pady=5)
         self.name_entry = ttkb.Entry(main_frame)
-        self.name_entry.grid(row=4, column=0, sticky=(ttkb.W, ttkb.E), padx=5, pady=5)
+        self.name_entry.grid(row=5, column=0, sticky=(ttkb.W, ttkb.E), padx=5, pady=5)
 
+        # Buttons
         button_frame = ttkb.Frame(main_frame)
-        button_frame.grid(row=5, column=0, pady=10)
+        button_frame.grid(row=6, column=0, pady=10)
 
-        ttkb.Button(button_frame, text="Add", command=self.add_bank_code).grid(
-            row=0, column=0, padx=5
-        )
-        ttkb.Button(button_frame, text="Update", command=self.update_bank_code).grid(
-            row=0, column=1, padx=5
-        )
-        ttkb.Button(button_frame, text="Delete", command=self.delete_bank_code).grid(
-            row=0, column=2, padx=5
-        )
-        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(
-            row=0, column=3, padx=5
-        )
+        ttkb.Button(button_frame, text="Add", command=self.add_bank_code).grid(row=0, column=0, padx=5)
+        ttkb.Button(button_frame, text="Update", command=self.update_bank_code).grid(row=0, column=1, padx=5)
+        ttkb.Button(button_frame, text="Delete", command=self.delete_bank_code).grid(row=0, column=2, padx=5)
+        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=3, padx=5)
 
+        # Configure grid weights
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(0, weight=1)
+        main_frame.rowconfigure(1, weight=1)
+
+    def reset_search(self):
+        """Reset pencarian dan menampilkan semua data."""
+        self.search_entry.delete(0, tk.END)
+        self.populate_treeview()
 
     def populate_treeview(self):
         """Mengisi Treeview dengan data bank codes."""
         self.tree.delete(*self.tree.get_children())
         bank_codes = db_utils.get_bank_codes()
-        for code, name in bank_codes.items():
+        
+        sorted_data = sorted(
+            bank_codes.items(),
+            key=lambda item: item[0 if self.sort_order["column"] == "Code" else 1],
+            reverse=(self.sort_order["direction"] == "desc"),
+        )
+
+        for code, name in sorted_data:
             self.tree.insert("", "end", values=(code, name))
+
+    def search_bank_codes(self, event=None):
+        """Mencari bank codes berdasarkan keyword."""
+        search_term = self.search_entry.get().lower()
+        self.tree.delete(*self.tree.get_children())
+        bank_codes = db_utils.get_bank_codes()
+
+        for code, name in bank_codes.items():
+            if search_term in code.lower() or search_term in name.lower():
+                self.tree.insert("", "end", values=(code, name))
+
+    def sort_by_column(self, column):
+        """Mengurutkan data berdasarkan kolom."""
+        if self.sort_order["column"] == column and self.sort_order["direction"] == "asc":
+            self.sort_order["direction"] = "desc"
+        else:
+            self.sort_order["column"] = column
+            self.sort_order["direction"] = "asc"
+        self.populate_treeview()
 
     def add_bank_code(self):
         """Menambahkan data bank code."""
@@ -330,64 +389,124 @@ class ManageStatusMappingWindow(ttkb.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title("Manage Status Mapping")
-        self.minsize(600, 400)
+        self.sort_order = {"column": "Keyword", "direction": "asc"}
+        self.minsize(600, 600)
+        self.resizable(True, True)
         self.create_widgets()
         self.populate_treeview()
 
     def create_widgets(self):
+        """Membuat widgets untuk ManageStatusMappingWindow."""
         main_frame = ttkb.Frame(self, padding="10")
-        main_frame.grid(row=0, column=0, sticky="nsew")
+        main_frame.grid(row=0, column=0, sticky=(ttkb.W, ttkb.E, ttkb.N, ttkb.S))
 
-        # Create Treeview
+        # Add search frame
+        search_frame = ttkb.Frame(main_frame)
+        search_frame.grid(row=0, column=0, sticky=(ttkb.W, ttkb.E), pady=(0, 10))
+
+        ttkb.Label(search_frame, text="Search:").pack(side=ttkb.LEFT, padx=(0, 5))
+        self.search_entry = ttkb.Entry(search_frame)
+        self.search_entry.pack(side=ttkb.LEFT, expand=True, fill=ttkb.X)
+        self.search_entry.bind("<Return>", self.search_status)
+
+        search_button = ttkb.Button(
+            search_frame, text="Search", command=self.search_status
+        )
+        search_button.pack(side=ttkb.LEFT, padx=(5, 0))
+
+        reset_button = ttkb.Button(
+            search_frame, text="Reset", command=self.reset_search
+        )
+        reset_button.pack(side=ttkb.LEFT, padx=(5, 0))
+
+        # Treeview
         self.tree = ttkb.Treeview(
-            main_frame, 
-            columns=("Keyword", "Status"),
-            show="headings"
+            main_frame, columns=("Keyword", "Status"), show="headings"
         )
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        
-        self.tree.heading("Keyword", text="Keyword")
-        self.tree.heading("Status", text="Status")
-        
+        self.tree.grid(row=1, column=0, sticky=(ttkb.W, ttkb.E, ttkb.N, ttkb.S))
+
+        self.tree.heading(
+            "Keyword", text="Keyword", command=lambda: self.sort_by_column("Keyword")
+        )
+        self.tree.heading(
+            "Status", text="Status", command=lambda: self.sort_by_column("Status")
+        )
+
+        self.tree.column("Keyword", width=200)
+        self.tree.column("Status", width=100, anchor="center")
+
         scrollbar = ttkb.Scrollbar(
-            main_frame,
-            orient="vertical",
-            command=self.tree.yview
+            main_frame, orient="vertical", command=self.tree.yview
         )
-        scrollbar.grid(row=0, column=1, sticky="ns")
+        scrollbar.grid(row=1, column=1, sticky=(ttkb.N, ttkb.S))
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        # Input frame
-        input_frame = ttkb.Frame(main_frame)
-        input_frame.grid(row=1, column=0, columnspan=2, pady=10)
+        # Entry widgets
+        ttkb.Label(main_frame, text="Keyword:").grid(row=2, column=0, sticky=ttkb.W, padx=5, pady=5)
+        self.keyword_entry = ttkb.Entry(main_frame)
+        self.keyword_entry.grid(row=3, column=0, sticky=(ttkb.W, ttkb.E), padx=5, pady=5)
 
-        ttkb.Label(input_frame, text="Keyword:").grid(row=0, column=0, padx=5)
-        self.keyword_entry = ttkb.Entry(input_frame)
-        self.keyword_entry.grid(row=0, column=1, padx=5)
-
-        ttkb.Label(input_frame, text="Status:").grid(row=0, column=2, padx=5)
-        self.status_entry = ttkb.Entry(input_frame)
-        self.status_entry.grid(row=0, column=3, padx=5)
+        ttkb.Label(main_frame, text="Status:").grid(row=4, column=0, sticky=ttkb.W, padx=5, pady=5)
+        self.status_entry = ttkb.Entry(main_frame)
+        self.status_entry.grid(row=5, column=0, sticky=(ttkb.W, ttkb.E), padx=5, pady=5)
 
         # Buttons
-        btn_frame = ttkb.Frame(main_frame)
-        btn_frame.grid(row=2, column=0, columnspan=2, pady=10)
+        button_frame = ttkb.Frame(main_frame)
+        button_frame.grid(row=6, column=0, pady=10)
 
-        ttkb.Button(btn_frame, text="Add", command=self.add_mapping).grid(row=0, column=0, padx=5)
-        ttkb.Button(btn_frame, text="Delete", command=self.delete_mapping).grid(row=0, column=1, padx=5)
-        ttkb.Button(btn_frame, text="Close", command=self.destroy).grid(row=0, column=2, padx=5)
+        ttkb.Button(button_frame, text="Add", command=self.add_mapping).grid(row=0, column=0, padx=5)
+        ttkb.Button(button_frame, text="Delete", command=self.delete_mapping).grid(row=0, column=1, padx=5)
+        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=2, padx=5)
 
+        # Configure grid weights
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(0, weight=1)
+        main_frame.rowconfigure(1, weight=1)
+
+    def reset_search(self):
+        """Reset pencarian dan menampilkan semua data."""
+        self.search_entry.delete(0, tk.END)
+        self.populate_treeview()
 
     def populate_treeview(self):
+        """Mengisi Treeview dengan data status mapping."""
         self.tree.delete(*self.tree.get_children())
-        mapping = db_utils.get_status_mapping()
-        for keyword, statuses in mapping.items():
+        status_mapping = db_utils.get_status_mapping()
+        
+        data_list = []
+        for keyword, statuses in status_mapping.items():
             for status in statuses:
-                self.tree.insert("", "end", values=(keyword, status))
+                data_list.append((keyword, status))
+        
+        sorted_data = sorted(
+            data_list,
+            key=lambda item: item[0 if self.sort_order["column"] == "Keyword" else 1],
+            reverse=(self.sort_order["direction"] == "desc"),
+        )
+
+        for keyword, status in sorted_data:
+            self.tree.insert("", "end", values=(keyword, status))
+
+    def search_status(self, event=None):
+        """Mencari status mapping berdasarkan keyword."""
+        search_term = self.search_entry.get().lower()
+        self.tree.delete(*self.tree.get_children())
+        status_mapping = db_utils.get_status_mapping()
+
+        for keyword, statuses in status_mapping.items():
+            for status in statuses:
+                if search_term in keyword.lower() or search_term in status.lower():
+                    self.tree.insert("", "end", values=(keyword, status))
+
+    def sort_by_column(self, column):
+        """Mengurutkan data berdasarkan kolom."""
+        if self.sort_order["column"] == column and self.sort_order["direction"] == "asc":
+            self.sort_order["direction"] = "desc"
+        else:
+            self.sort_order["column"] = column
+            self.sort_order["direction"] = "asc"
+        self.populate_treeview()
 
     def add_mapping(self):
         keyword = self.keyword_entry.get().strip().upper()

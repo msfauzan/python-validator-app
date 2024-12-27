@@ -11,3 +11,4 @@
 2024-12-23 14:54:58,392 - ERROR - Error in manage_mapping: ManageMappingWindow.__init__() takes 2 positional arguments but 3 were given
 2024-12-23 14:55:03,038 - ERROR - Error in manage_mapping: ManageMappingWindow.__init__() takes 2 positional arguments but 3 were given
 2024-12-23 14:56:57,546 - ERROR - Error in manage_mapping: ManageMappingWindow.__init__() takes 2 positional arguments but 3 were given
+2024-12-27 13:32:01,632 - ERROR - Error adding bank code: Kode bank '333' sudah ada.

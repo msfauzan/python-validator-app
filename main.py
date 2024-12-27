@@ -37,7 +37,7 @@ class App:
             raise ValueError("root harus instance dari ttkb.Window")
         self.root = root
         self.style = ttkb.Style("cosmo")
-        self.root.title("LLD-Bank Track+")
+        self.root.title("LLD-Bank Data Clarification Tool")
         
         try:
             self.validator = DataValidator(FUZZY_MATCH_THRESHOLD)
@@ -88,13 +88,6 @@ class App:
         db_menu.add_command(label="Manage Bank Codes (Ctrl+B)", command=self.manage_bank_codes)
         db_menu.add_command(label="Manage Status (Ctrl+S)", command=self.manage_status)  # Add new menu item
 
-        # Manage Menu
-        manage_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Manage", menu=manage_menu)
-        manage_menu.add_command(label="Manage Category Mapping", command=lambda: ManageMappingWindow(self.root))
-        manage_menu.add_command(label="Manage Bank Codes", command=lambda: ManageBankCodesWindow(self.root))
-        manage_menu.add_command(label="Manage Status Mapping", command=lambda: ManageStatusMappingWindow(self.root))
-
         # Help Menu
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Help", menu=help_menu)
@@ -127,7 +120,7 @@ class App:
             welcome_frame,
             text="LLD-Bank Data Clarification Tool",
             style="Primary.TLabel",
-            font=("Arial", 16, "bold")
+            font=("Helvetica", 16, "bold")
         )
         title_label.grid(row=0, column=0, pady=(10, 20), sticky="nsew")
         welcome_frame.grid_columnconfigure(0, weight=1)
@@ -142,7 +135,7 @@ class App:
         
         self.file_button = ttkb.Button(
             file_frame,
-            text="Choose Excel File (Ctrl+O)",
+            text="Choose Excel File",
             command=self.process_file,
             style="Action.TButton"
         )

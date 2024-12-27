@@ -268,7 +268,7 @@ def get_mapping_data(table_name):
             conn.row_factory = sqlite3.Row  # Enable dictionary access
             cursor = conn.cursor()
             
-            cursor.execute(f"SELECT keyword, category FROM {table_name}")
+            cursor.execute(f"SELECT keyword, category FROM {table_name} ORDER BY keyword ASC")
             return {row['keyword']: row['category'] for row in cursor.fetchall()}
             
     except sqlite3.Error as e:
