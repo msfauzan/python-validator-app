@@ -96,16 +96,30 @@ class DataValidator:
         reference_bank_name = self.bank_codes[bank_code].upper()
         bank_name = str(bank_name).upper() if not pd.isna(bank_name) else ""
 
+        # def clean_bank_name(name):
+        #     name = re.sub(r"[^\w\s]", " ", name)
+        #     name = " ".join(name.split())
+        #     common_words = ["PT", "BANK", "PERSERO", "TBK"]
+        #     for word in common_words:
+        #         name = name.replace(f" {word} ", " ")
+        #         if name.startswith(f"{word} "):
+        #             name = name[len(word) :].strip()
+        #         if name.endswith(f" {word}"):
+        #             name = name[: -len(word)].strip()
+        #     return name.strip()
+
         def clean_bank_name(name):
+            name = str(name).upper()
             name = re.sub(r"[^\w\s]", " ", name)
             name = " ".join(name.split())
-            common_words = ["PT", "BANK", "PERSERO", "TBK"]
+            # Hapus kata-kata lokasi/negara
+            location_words = ["HONG KONG", "SINGAPORE", "INDONESIA", "CHINA", "JAPAN"]
+            for loc in location_words:
+                name = name.replace(loc, "")
+            # Hapus kata-kata umum
+            common_words = ["PT", "BANK", "PERSERO", "TBK", "LIMITED", "LTD"]
             for word in common_words:
-                name = name.replace(f" {word} ", " ")
-                if name.startswith(f"{word} "):
-                    name = name[len(word) :].strip()
-                if name.endswith(f" {word}"):
-                    name = name[: -len(word)].strip()
+                name = name.replace(word, "")
             return name.strip()
 
         clean_bank = clean_bank_name(bank_name)
@@ -141,6 +155,7 @@ class DataValidator:
                 "PT",
                 "BANK",
                 "PERSERO",
+                "(PERSERO)",
                 "TBK",
                 "INCORPORATION",
                 "CORPORATION",
@@ -356,7 +371,28 @@ class DataValidator:
                         })
                     continue  # Skip all other validation checks for this row
 
-                # Regular validation logic starts here
+                # --- Tambahkan kembali logika sama ---
+                is_penerima_bank = (
+                    "BANK" in str(row[COL_NAMA_PENERIMA]).upper() 
+                    and row[COL_KATEGORI_PENERIMA] not in ["F1", "C0"]
+                )
+                is_pembayar_bank = (
+                    "BANK" in str(row[COL_NAMA_PEMBAYAR]).upper() 
+                    and row[COL_KATEGORI_PEMBAYAR] not in ["F1", "C0"]
+                )
+                is_valid_bank_code_penerima = self.validate_bank_code(
+                    row[COL_NAMA_PENERIMA], row.get(COL_KODE_BANK, "")
+                )
+                is_valid_bank_code_pembayar = self.validate_bank_code(
+                    row[COL_NAMA_PEMBAYAR], row.get(COL_KODE_BANK, "")
+                )
+                penerima_status = str(row.get(COL_STATUS_PENERIMA, "")).upper()
+                pembayar_status = str(row.get(COL_STATUS_PEMBAYAR, "")).upper()
+                is_same_bank = self.is_same_bank(row[COL_NAMA_PENERIMA], row[COL_NAMA_PEMBAYAR])
+
+                suggested_category_penerima = None
+                suggested_category_pembayar = None
+
                 is_penerima_bank = self.is_standalone_word("BANK", row["nama_penerima"])
                 is_pembayar_bank = self.is_standalone_word("BANK", row["nama_pembayar"])
 
@@ -377,137 +413,142 @@ class DataValidator:
                 suggested_category_penerima = None
                 suggested_category_pembayar = None
 
-                if self.is_n1_category(row.get("stt", "")):
-                    suggested_category_penerima = "N1"
-                    suggested_category_pembayar = "N1"
-                    penerima_status = "N1"
-                    pembayar_status = "N1"
-                # Add check for STT category exceptions before the main validation logic
-                elif self.is_category_allowed_for_stt(row.get("stt", ""), row.get("kategori_penerima", "")):
-                    # Skip validation for kategori_penerima if it's allowed for this STT
-                    suggested_category_penerima = None
-                    suggested_category_pembayar = row.get("kategori_pembayar", "")  # Keep original validation for pembayar
-                else:
-                    if (
-                        row["nama_penerima"] == row["nama_pembayar"]
-                        and penerima_status == pembayar_status
-                    ):
-                        suggested_category_pembayar = "I0"
+                # # Logika untuk kategori C2 (direvisi)
+                # if is_penerima_bank and is_pembayar_bank:  # Kondisi 1: Keduanya bank
+                #     if is_same_bank:  # Kondisi 2: Bank yang sama
+                #         if is_valid_bank_code_penerima:  # Kondisi 3: Sandi bank penerima valid
+                #             if suggested_category_pembayar == "C1":  # Kondisi 4: Kategori penerima C1
+                #                 if pembayar_status != "ID":  # Kondisi 5: Status pembayar non-ID
+                #                     suggested_category_pembayar = "C2"
+
+                # Lanjutkan dengan pengecekan kategori lainnya jika bukan C2
+                if suggested_category_pembayar is None:
+                    # Add check for STT category exceptions before the main validation logic
+                    if self.is_category_allowed_for_stt(row.get("stt", ""), row.get("kategori_penerima", "")):
+                        # Skip validation for kategori_penerima if it's allowed for this STT
+                        suggested_category_penerima = None
+                        suggested_category_pembayar = row.get("kategori_pembayar", "")  # Keep original validation for pembayar
                     else:
-                        for central_bank_keyword in self.reference_mapping["penerima"]:
-                            if central_bank_keyword.upper() == "C0":
-                                continue
-                            if (
-                                central_bank_keyword.upper()
-                                in str(row["nama_penerima"]).upper()
-                                and self.reference_mapping["penerima"][
-                                    central_bank_keyword
-                                ]
-                                == "C0"
-                            ):
-                                suggested_category_penerima = "C0"
-                                is_penerima_bank = False
-                                break
-
-                        for central_bank_keyword in self.reference_mapping["pembayar"]:
-                            if central_bank_keyword.upper() == "C0":
-                                continue
-                            if (
-                                central_bank_keyword.upper()
-                                in str(row["nama_pembayar"]).upper()
-                                and self.reference_mapping["pembayar"][
-                                    central_bank_keyword
-                                ]
-                                == "C0"
-                            ):
-                                suggested_category_pembayar = "C0"
-                                is_pembayar_bank = False
-                                break
-
-                        if suggested_category_penerima is None:
-                            for q1_bank_keyword in self.reference_mapping["penerima"]:
-                                if q1_bank_keyword.upper() == "F1":
+                        if (
+                            row["nama_penerima"] == row["nama_pembayar"]
+                            and penerima_status == pembayar_status
+                        ):
+                            suggested_category_pembayar = "I0"
+                        else:
+                            for central_bank_keyword in self.reference_mapping["penerima"]:
+                                if central_bank_keyword.upper() == "C0":
                                     continue
                                 if (
-                                    q1_bank_keyword.upper()
+                                    central_bank_keyword.upper()
                                     in str(row["nama_penerima"]).upper()
                                     and self.reference_mapping["penerima"][
-                                        q1_bank_keyword
+                                        central_bank_keyword
                                     ]
-                                    == "F1"
+                                    == "C0"
                                 ):
-                                    suggested_category_penerima = "F1"
+                                    suggested_category_penerima = "C0"
+                                    is_penerima_bank = False
                                     break
 
-                        if suggested_category_pembayar is None:
-                            for q1_bank_keyword in self.reference_mapping["pembayar"]:
-                                if q1_bank_keyword.upper() == "F1":
+                            for central_bank_keyword in self.reference_mapping["pembayar"]:
+                                if central_bank_keyword.upper() == "C0":
                                     continue
                                 if (
-                                    q1_bank_keyword.upper()
+                                    central_bank_keyword.upper()
                                     in str(row["nama_pembayar"]).upper()
                                     and self.reference_mapping["pembayar"][
-                                        q1_bank_keyword
+                                        central_bank_keyword
                                     ]
-                                    == "F1"
+                                    == "C0"
                                 ):
-                                    suggested_category_pembayar = "F1"
+                                    suggested_category_pembayar = "C0"
+                                    is_pembayar_bank = False
                                     break
 
-                        if suggested_category_penerima is None and is_penerima_bank:
-                            if is_valid_bank_code_penerima:
-                                if penerima_status == "ID":
-                                    suggested_category_penerima = "C1"
+                            if suggested_category_penerima is None:
+                                for q1_bank_keyword in self.reference_mapping["penerima"]:
+                                    if q1_bank_keyword.upper() == "F1":
+                                        continue
+                                    if (
+                                        q1_bank_keyword.upper()
+                                        in str(row["nama_penerima"]).upper()
+                                        and self.reference_mapping["penerima"][
+                                            q1_bank_keyword
+                                        ]
+                                        == "F1"
+                                    ):
+                                        suggested_category_penerima = "F1"
+                                        break
+
+                            if suggested_category_pembayar is None:
+                                for q1_bank_keyword in self.reference_mapping["pembayar"]:
+                                    if q1_bank_keyword.upper() == "F1":
+                                        continue
+                                    if (
+                                        q1_bank_keyword.upper()
+                                        in str(row["nama_pembayar"]).upper()
+                                        and self.reference_mapping["pembayar"][
+                                            q1_bank_keyword
+                                        ]
+                                        == "F1"
+                                    ):
+                                        suggested_category_pembayar = "F1"
+                                        break
+
+                            if suggested_category_penerima is None and is_penerima_bank:
+                                if is_valid_bank_code_penerima:
+                                    if penerima_status == "ID":
+                                        suggested_category_penerima = "C1"
+                                    else:
+                                        suggested_category_penerima = "C2"
                                 else:
                                     suggested_category_penerima = "C9"
-                            else:
-                                suggested_category_penerima = "C9"
 
-                        if suggested_category_pembayar is None and is_pembayar_bank:
-                            if is_valid_bank_code_pembayar:
-                                if pembayar_status == "ID":
-                                    suggested_category_pembayar = "C1"
+                            if suggested_category_pembayar is None and is_pembayar_bank:
+                                if is_valid_bank_code_pembayar:
+                                    if pembayar_status == "ID":
+                                        suggested_category_pembayar = "C1"
+                                    else:
+                                        suggested_category_pembayar = "C2"
                                 else:
                                     suggested_category_pembayar = "C9"
-                            else:
-                                suggested_category_pembayar = "C9"
 
-                        if (
-                            is_penerima_bank
-                            and is_pembayar_bank
-                            and is_same_bank
-                        ):
-                            if (
-                                is_valid_bank_code_penerima
-                                or is_valid_bank_code_pembayar
-                            ):
-                                if penerima_status != "ID" or pembayar_status != "ID":
-                                    if (
-                                        suggested_category_penerima != "C1"
-                                        and suggested_category_penerima != "F1"
-                                    ):
-                                        suggested_category_penerima = "C2"
-                                    if (
-                                        suggested_category_pembayar != "C1"
-                                        and suggested_category_pembayar != "F1"
-                                    ):
-                                        suggested_category_pembayar = "C2"
+                            # if (
+                            #     is_penerima_bank
+                            #     and is_pembayar_bank
+                            #     and is_same_bank
+                            # ):
+                            #     if (
+                            #         is_valid_bank_code_penerima
+                            #         or is_valid_bank_code_pembayar
+                            #     ):
+                            #         if penerima_status != "ID" or pembayar_status != "ID":
+                            #             if (
+                            #                 suggested_category_penerima != "C1"
+                            #                 and suggested_category_penerima != "F1"
+                            #             ):
+                            #                 suggested_category_penerima = "C2"
+                            #             if (
+                            #                 suggested_category_pembayar != "C1"
+                            #                 and suggested_category_pembayar != "F1"
+                            #             ):
+                            #                 suggested_category_pembayar = "C2"
 
-                    if suggested_category_penerima is None and not is_penerima_bank:
-                        for keyword, expected_category in self.reference_mapping["penerima"].items():
-                            # Ganti pengecekan keyword dengan is_standalone_word
-                            if self.is_standalone_word(keyword, str(row["nama_penerima"])):
-                                if row["kategori_penerima"] != expected_category:
-                                    suggested_category_penerima = expected_category
-                                break
+                        if suggested_category_penerima is None and not is_penerima_bank:
+                            for keyword, expected_category in self.reference_mapping["penerima"].items():
+                                # Ganti pengecekan keyword dengan is_standalone_word
+                                if self.is_standalone_word(keyword, str(row["nama_penerima"])):
+                                    if row["kategori_penerima"] != expected_category:
+                                        suggested_category_penerima = expected_category
+                                    break
 
-                    if suggested_category_pembayar is None and not is_pembayar_bank:
-                        for keyword, expected_category in self.reference_mapping["pembayar"].items():
-                            # Ganti pengecekan keyword dengan is_standalone_word
-                            if self.is_standalone_word(keyword, str(row["nama_pembayar"])):
-                                if row["kategori_pembayar"] != expected_category:
-                                    suggested_category_pembayar = expected_category
-                                break
+                        if suggested_category_pembayar is None and not is_pembayar_bank:
+                            for keyword, expected_category in self.reference_mapping["pembayar"].items():
+                                # Ganti pengecekan keyword dengan is_standalone_word
+                                if self.is_standalone_word(keyword, str(row["nama_pembayar"])):
+                                    if row["kategori_pembayar"] != expected_category:
+                                        suggested_category_pembayar = expected_category
+                                    break
 
                 if (
                     suggested_category_penerima

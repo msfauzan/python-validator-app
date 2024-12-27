@@ -125,7 +125,7 @@ class App:
         # Create a larger, bold title label centered in the window
         title_label = ttkb.Label(
             welcome_frame,
-            text="LLD-Bank Track+",
+            text="LLD-Bank Data Clarification Tool",
             style="Primary.TLabel",
             font=("Arial", 16, "bold")
         )
