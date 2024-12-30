@@ -1,6 +1,6 @@
 import tkinter as tk
 import ttkbootstrap as ttkb
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import db_utils
 
 class ManageMappingWindow(ttkb.Toplevel):
@@ -88,8 +88,11 @@ class ManageMappingWindow(ttkb.Toplevel):
         ttkb.Button(button_frame, text="Delete", command=self.delete_mapping).grid(
             row=0, column=2, padx=5
         )
-        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(
+        ttkb.Button(button_frame, text="Import SQL", command=self.import_sql).grid(
             row=0, column=3, padx=5
+        )
+        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(
+            row=0, column=4, padx=5
         )
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -213,6 +216,33 @@ class ManageMappingWindow(ttkb.Toplevel):
         """Menampilkan error message."""
         messagebox.showerror("Error", message)
 
+    def import_sql(self):
+        """Handle import SQL file."""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="Select SQL File",
+                filetypes=[("SQL files", "*.sql"), ("All files", "*.*")]
+            )
+            
+            if file_path:
+                if messagebox.askyesno(
+                    "Confirm Import",
+                    "This will execute SQL commands on the database. Are you sure you want to continue?"
+                ):
+                    success, message = db_utils.execute_sql_file(file_path)
+                    if success:
+                        messagebox.showinfo("Success", message)
+                        self.populate_treeview()  # Refresh data after import
+                        # Update validator reference data if app exists
+                        if hasattr(self.app, 'validator'):
+                            self.app.validator.reload_reference_data()
+                    else:
+                        messagebox.showerror("Error", message)
+        
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import SQL: {str(e)}")
+            db_utils.log_error(f"Error in import_sql: {str(e)}")
+
 class ManageBankCodesWindow(ttkb.Toplevel):
     """Window untuk mengelola bank codes."""
 
@@ -287,7 +317,10 @@ class ManageBankCodesWindow(ttkb.Toplevel):
         ttkb.Button(button_frame, text="Add", command=self.add_bank_code).grid(row=0, column=0, padx=5)
         ttkb.Button(button_frame, text="Update", command=self.update_bank_code).grid(row=0, column=1, padx=5)
         ttkb.Button(button_frame, text="Delete", command=self.delete_bank_code).grid(row=0, column=2, padx=5)
-        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=3, padx=5)
+        ttkb.Button(button_frame, text="Import SQL", command=self.import_sql).grid(
+            row=0, column=3, padx=5
+        )
+        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=4, padx=5)
 
         # Configure grid weights
         self.columnconfigure(0, weight=1)
@@ -383,6 +416,33 @@ class ManageBankCodesWindow(ttkb.Toplevel):
         else:
             messagebox.showerror("Error", "Please select an item to delete.")
 
+    def import_sql(self):
+        """Handle import SQL file."""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="Select SQL File",
+                filetypes=[("SQL files", "*.sql"), ("All files", "*.*")]
+            )
+            
+            if file_path:
+                if messagebox.askyesno(
+                    "Confirm Import",
+                    "This will execute SQL commands on the database. Are you sure you want to continue?"
+                ):
+                    success, message = db_utils.execute_sql_file(file_path)
+                    if success:
+                        messagebox.showinfo("Success", message)
+                        self.populate_treeview()  # Refresh data after import
+                        # Update validator reference data if app exists
+                        if hasattr(self.app, 'validator'):
+                            self.app.validator.reload_reference_data()
+                    else:
+                        messagebox.showerror("Error", message)
+        
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import SQL: {str(e)}")
+            db_utils.log_error(f"Error in import_sql: {str(e)}")
+
 class ManageStatusMappingWindow(ttkb.Toplevel):
     """Window untuk mengelola mapping status."""
 
@@ -456,7 +516,10 @@ class ManageStatusMappingWindow(ttkb.Toplevel):
 
         ttkb.Button(button_frame, text="Add", command=self.add_mapping).grid(row=0, column=0, padx=5)
         ttkb.Button(button_frame, text="Delete", command=self.delete_mapping).grid(row=0, column=1, padx=5)
-        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=2, padx=5)
+        ttkb.Button(button_frame, text="Import SQL", command=self.import_sql).grid(
+            row=0, column=2, padx=5
+        )
+        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=3, padx=5)
 
         # Configure grid weights
         self.columnconfigure(0, weight=1)
@@ -537,3 +600,30 @@ class ManageStatusMappingWindow(ttkb.Toplevel):
                     messagebox.showerror("Error", "Failed to delete status mapping")
         else:
             messagebox.showerror("Error", "Please select a mapping to delete")
+
+    def import_sql(self):
+        """Handle import SQL file."""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="Select SQL File",
+                filetypes=[("SQL files", "*.sql"), ("All files", "*.*")]
+            )
+            
+            if file_path:
+                if messagebox.askyesno(
+                    "Confirm Import",
+                    "This will execute SQL commands on the database. Are you sure you want to continue?"
+                ):
+                    success, message = db_utils.execute_sql_file(file_path)
+                    if success:
+                        messagebox.showinfo("Success", message)
+                        self.populate_treeview()  # Refresh data after import
+                        # Update validator reference data if app exists
+                        if hasattr(self.app, 'validator'):
+                            self.app.validator.reload_reference_data()
+                    else:
+                        messagebox.showerror("Error", message)
+        
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import SQL: {str(e)}")
+            db_utils.log_error(f"Error in import_sql: {str(e)}")

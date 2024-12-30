@@ -1,0 +1,1 @@
+INSERT INTO ref_mapping_penerima (keyword, category) VALUES ('NEW_KEYWORD', 'B0');

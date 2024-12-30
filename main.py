@@ -87,6 +87,8 @@ class App:
         db_menu.add_command(label="Manage Mapping (Ctrl+M)", command=self.manage_mapping)
         db_menu.add_command(label="Manage Bank Codes (Ctrl+B)", command=self.manage_bank_codes)
         db_menu.add_command(label="Manage Status (Ctrl+S)", command=self.manage_status)  # Add new menu item
+        # db_menu.add_separator()
+        db_menu.add_command(label="Import SQL", command=self.import_sql)  # Add new menu item
 
         # Help Menu
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -524,6 +526,32 @@ Panduan Penggunaan Data Validation Tool
         if success:
             self.validator.reload_reference_data()
             messagebox.showinfo("Info", f"Berhasil menambah kategori {category} untuk '{keyword}'")
+
+    def import_sql(self):
+        """Handle import SQL file."""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="Select SQL File",
+                filetypes=[("SQL files", "*.sql"), ("All files", "*.*")]
+            )
+            
+            if file_path:
+                if messagebox.askyesno(
+                    "Confirm Import",
+                    "This will execute SQL commands on the database. Are you sure you want to continue?"
+                ):
+                    success, message = db_utils.execute_sql_file(file_path)
+                    if success:
+                        messagebox.showinfo("Success", message)
+                        # Reload data after successful import
+                        if hasattr(self, 'validator'):
+                            self.validator.reload_reference_data()
+                    else:
+                        messagebox.showerror("Error", message)
+        
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import SQL: {str(e)}")
+            db_utils.log_error(f"Error in import_sql: {str(e)}")
 
 if __name__ == "__main__":
     root = ttkb.Window(themename="cosmo")

@@ -12,3 +12,5 @@
 2024-12-23 14:55:03,038 - ERROR - Error in manage_mapping: ManageMappingWindow.__init__() takes 2 positional arguments but 3 were given
 2024-12-23 14:56:57,546 - ERROR - Error in manage_mapping: ManageMappingWindow.__init__() takes 2 positional arguments but 3 were given
 2024-12-27 13:32:01,632 - ERROR - Error adding bank code: Kode bank '333' sudah ada.
+2024-12-30 09:53:07,168 - ERROR - Error in manage_mapping: '_tkinter.tkapp' object has no attribute 'import_sql'
+2024-12-30 09:53:14,247 - ERROR - Error in manage_bank_codes: 'ManageBankCodesWindow' object has no attribute 'app'
