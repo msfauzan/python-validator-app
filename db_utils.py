@@ -268,7 +268,7 @@ def get_mapping_data(table_name):
             conn.row_factory = sqlite3.Row  # Enable dictionary access
             cursor = conn.cursor()
             
-            cursor.execute(f"SELECT keyword, category FROM {table_name} ORDER BY keyword ASC")
+            cursor.execute(f"SELECT keyword, category FROM {table_name}")
             return {row['keyword']: row['category'] for row in cursor.fetchall()}
             
     except sqlite3.Error as e:
@@ -501,51 +501,6 @@ def delete_status_mapping(keyword, status):
     except sqlite3.Error as e:
         log_error(f"Error deleting status mapping: {e}")
         return False
-
-def execute_sql_file(sql_file_path):
-    """
-    Mengeksekusi file SQL.
-    
-    Args:
-        sql_file_path (str): Path ke file SQL yang akan dieksekusi
-        
-    Returns:
-        tuple: (success, message)
-            - success (bool): True jika berhasil, False jika gagal
-            - message (str): Pesan sukses/error
-    """
-    try:
-        with open(sql_file_path, 'r', encoding='utf-8') as f:
-            sql_script = f.read()
-            
-        with sqlite3.connect(DATABASE_NAME) as conn:
-            cursor = conn.cursor()
-            
-            # Start transaction
-            cursor.execute("BEGIN")
-            
-            try:
-                # Split script into individual statements
-                statements = sql_script.split(';')
-                
-                # Execute each statement
-                for statement in statements:
-                    if statement.strip():
-                        cursor.execute(statement)
-                
-                # Commit if all successful
-                conn.commit()
-                return True, "SQL script executed successfully"
-                
-            except sqlite3.Error as e:
-                # Rollback on error
-                conn.rollback()
-                return False, f"Error executing SQL: {str(e)}"
-                
-    except FileNotFoundError:
-        return False, f"SQL file not found: {sql_file_path}"
-    except Exception as e:
-        return False, f"Unexpected error: {str(e)}"
 
 # Panggil fungsi ini untuk membuat database (cukup sekali saja)
 # create_database()
