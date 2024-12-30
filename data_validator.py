@@ -282,6 +282,68 @@ class DataValidator:
             # Cari kata dengan spasi di sekitarnya
             return f" {word} " in text
 
+    def check_specific_category(self, name, mapping_dict):
+        """
+        Memeriksa kategori spesifik berdasarkan keyword, dengan mempertimbangkan prioritas.
+        Mengembalikan kategori yang ditemukan atau None jika tidak ada yang cocok.
+        """
+        name = str(name).upper()
+        found_category = None
+        
+        # Pertama, cek keyword-keyword spesifik (prioritas tinggi)
+        for keyword, category in mapping_dict.items():
+            if keyword.upper() in ["PT", "CV", "TBK"]:  # Skip generic company identifiers
+                continue
+            if self.is_standalone_word(keyword, name):
+                return category  # Langsung return jika menemukan keyword spesifik
+                
+        # Kedua, cek identifier umum seperti PT jika belum ada kategori yang ditemukan
+        for keyword, category in mapping_dict.items():
+            if keyword.upper() in ["PT", "CV", "TBK"]:
+                if self.is_standalone_word(keyword, name):
+                    found_category = category
+                    
+        return found_category
+
+    def get_bank_category(self, name, status, bank_code, is_valid_code):
+        """
+        Menentukan kategori bank berdasarkan prioritas:
+        1. Status yang disarankan (jika ada)
+        2. Status dari data mentah
+        3. Validasi kode bank
+        
+        Args:
+            name (str): Nama bank
+            status (str): Status dari data
+            bank_code (str): Kode bank
+            is_valid_code (bool): Validitas kode bank
+            
+        Returns:
+            tuple: (suggested_category, suggested_status)
+        """
+        # Cek dulu status yang disarankan
+        suggested_statuses = self.get_suggested_status(name)
+        
+        # Jika ada saran status
+        if suggested_statuses:
+            if "ID" in suggested_statuses and is_valid_code:
+                return "C1", "ID"
+            for status in suggested_statuses:
+                if status != "N1":  # Skip N1 untuk pengecekan bank
+                    return "C2", status
+        
+        # # Jika tidak ada saran status, gunakan status data
+        # if status == "ID":
+        #     return "C1", status
+        # elif status:
+        #     return "C2", status
+            
+        # # Jika tidak ada status yang valid, cek kode bank
+        # if is_valid_code:
+        #     return "C9", None
+        
+        return None, None
+
     def process_file(self, input_file):
         """
         Memproses file Excel dan melakukan validasi.
@@ -510,38 +572,43 @@ class DataValidator:
                                         break
 
                             if suggested_category_penerima is None and is_penerima_bank:
-                                if is_valid_bank_code_penerima:
-                                    if penerima_status == "ID":
-                                        suggested_category_penerima = "C1"
-                                    else:
-                                        suggested_category_penerima = "C2"
-                                else:
-                                    suggested_category_penerima = "C9"
+                                suggested_category_penerima, suggested_status_penerima = self.get_bank_category(
+                                    row["nama_penerima"],
+                                    row.get("status_penerima", ""),
+                                    row.get("cKdBank", ""),
+                                    is_valid_bank_code_penerima
+                                )
+                                
+                                if suggested_category_penerima:
+                                    # Jika ini bank penerima dengan kategori C1 atau C2,
+                                    # dan pembayar adalah bank yang sama
+                                    if (suggested_category_penerima in ["C1", "C2"] and 
+                                        self.is_same_bank(row["nama_penerima"], row["nama_pembayar"])):
+                                        # Sarankan kategori pembayar berdasarkan kategori penerima
+                                        if suggested_category_penerima == "C1":
+                                            suggested_category_pembayar = "C2"
+                                        else:
+                                            suggested_category_pembayar = "C1"
 
                             if suggested_category_pembayar is None and is_pembayar_bank:
-                                if is_valid_bank_code_pembayar:
-                                    if pembayar_status == "ID":
-                                        suggested_category_pembayar = "C1"
-                                    else:
-                                        suggested_category_pembayar = "C2"
-                                else:
-                                    suggested_category_pembayar = "C9"
+                                suggested_category_pembayar, suggested_status_pembayar = self.get_bank_category(
+                                    row["nama_pembayar"],
+                                    row.get("status_pembayar", ""),
+                                    row.get("cKdBank", ""),
+                                    is_valid_bank_code_pembayar
+                                )
 
                         if suggested_category_penerima is None and not is_penerima_bank:
-                            for keyword, expected_category in self.reference_mapping["penerima"].items():
-                                # Ganti pengecekan keyword dengan is_standalone_word
-                                if self.is_standalone_word(keyword, str(row["nama_penerima"])):
-                                    if row["kategori_penerima"] != expected_category:
-                                        suggested_category_penerima = expected_category
-                                    break
+                            suggested_category_penerima = self.check_specific_category(
+                                row["nama_penerima"], 
+                                self.reference_mapping["penerima"]
+                            )
 
                         if suggested_category_pembayar is None and not is_pembayar_bank:
-                            for keyword, expected_category in self.reference_mapping["pembayar"].items():
-                                # Ganti pengecekan keyword dengan is_standalone_word
-                                if self.is_standalone_word(keyword, str(row["nama_pembayar"])):
-                                    if row["kategori_pembayar"] != expected_category:
-                                        suggested_category_pembayar = expected_category
-                                    break
+                            suggested_category_pembayar = self.check_specific_category(
+                                row["nama_pembayar"], 
+                                self.reference_mapping["pembayar"]
+                            )
 
                 if (
                     suggested_category_penerima
