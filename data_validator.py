@@ -652,7 +652,7 @@ class DataValidator:
                             "row": idx + 2,
                             "column": "status_penerima",
                             "current": current_status_penerima,
-                            "suggested": "/".join(suggested_status_penerima),
+                            "suggested": " or ".join(suggested_status_penerima),
                             "name": row["nama_penerima"],
                             "bank_code": row.get("cKdBank", ""),
                             "status": current_status_penerima
@@ -668,7 +668,7 @@ class DataValidator:
                             "row": idx + 2,
                             "column": "status_pembayar",
                             "current": current_status_pembayar,
-                            "suggested": "/".join(suggested_status_pembayar),
+                            "suggested": " or ".join(suggested_status_pembayar),
                             "name": row["nama_pembayar"],
                             "bank_code": row.get("cKdBank", ""),
                             "status": current_status_pembayar

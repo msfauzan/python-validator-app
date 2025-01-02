@@ -94,6 +94,7 @@ class App:
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="About", command=self.show_about)
+        help_menu.add_command(label="How to Import SQL", command=self.show_help_sql)
 
     def create_status_bar(self):
         """Membuat status bar."""
@@ -306,6 +307,57 @@ Panduan Penggunaan Data Validation Tool
             "Ctrl+M: Manage Mapping\n" +
             "Ctrl+B: Manage Bank Codes"
         )
+
+    def show_help_sql(self):
+        """Menampilkan panduan penggunaan."""
+        help_text = """SQL Import Guide
+
+Table Structures:
+
+1. ref_mapping_penerima & ref_mapping_pembayar
+   - keyword TEXT PRIMARY KEY
+   - category TEXT
+   Example:
+   INSERT INTO ref_mapping_penerima (keyword, category) VALUES ('BANK', 'C9');
+   INSERT INTO ref_mapping_pembayar (keyword, category) VALUES ('BANK', 'C9');
+
+2. bank_codes
+   - code TEXT PRIMARY KEY
+   - name TEXT
+   Example:
+   INSERT INTO bank_codes (code, name) VALUES ('014', 'BANK CENTRAL ASIA');
+
+3. ref_mapping_status
+   - keyword TEXT PRIMARY KEY
+   - status TEXT
+   Example:
+   INSERT INTO ref_mapping_status (keyword, status) VALUES ('PT', 'ID');
+   INSERT INTO ref_mapping_status (keyword, status) VALUES ('LTD', 'SG');
+
+Notes:
+- Use proper SQL syntax with semicolons
+- Keywords are case-sensitive
+- Each table has created_at and updated_at timestamps (auto-managed)
+- Duplicate primary keys will cause errors
+- Use single quotes for text values
+- You can use multiple INSERT statements in one file
+"""
+        help_window = tk.Toplevel(self.root)
+        help_window.title("Bantuan Penggunaan")
+        help_window.geometry("600x400")
+        
+        text_widget = tk.Text(help_window, wrap=tk.WORD, padx=15, pady=15)
+        text_widget.insert("1.0", help_text)
+        text_widget.config(state="disabled")
+        text_widget.pack(fill="both", expand=True)
+        
+        close_btn = ttkb.Button(
+            help_window,
+            text="Tutup",
+            command=help_window.destroy,
+            style="Action.TButton"
+        )
+        close_btn.pack(pady=10)
 
     def process_file(self):
         """Memproses file dengan visual feedback yang lebih baik."""

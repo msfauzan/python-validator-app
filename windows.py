@@ -82,18 +82,18 @@ class ManageMappingWindow(ttkb.Toplevel):
         ttkb.Button(button_frame, text="Add", command=self.add_mapping).grid(
             row=0, column=0, padx=5
         )
-        ttkb.Button(button_frame, text="Update", command=self.update_mapping).grid(
-            row=0, column=1, padx=5
-        )
+        # ttkb.Button(button_frame, text="Update", command=self.update_mapping).grid(
+        #     row=0, column=1, padx=5
+        # )
         ttkb.Button(button_frame, text="Delete", command=self.delete_mapping).grid(
             row=0, column=2, padx=5
         )
         ttkb.Button(button_frame, text="Import SQL", command=self.import_sql).grid(
             row=0, column=3, padx=5
         )
-        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(
-            row=0, column=4, padx=5
-        )
+        # ttkb.Button(button_frame, text="Close", command=self.destroy).grid(
+        #     row=0, column=4, padx=5
+        # )
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
@@ -315,12 +315,12 @@ class ManageBankCodesWindow(ttkb.Toplevel):
         button_frame.grid(row=6, column=0, pady=10)
 
         ttkb.Button(button_frame, text="Add", command=self.add_bank_code).grid(row=0, column=0, padx=5)
-        ttkb.Button(button_frame, text="Update", command=self.update_bank_code).grid(row=0, column=1, padx=5)
+        # ttkb.Button(button_frame, text="Update", command=self.update_bank_code).grid(row=0, column=1, padx=5)
         ttkb.Button(button_frame, text="Delete", command=self.delete_bank_code).grid(row=0, column=2, padx=5)
         ttkb.Button(button_frame, text="Import SQL", command=self.import_sql).grid(
             row=0, column=3, padx=5
         )
-        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=4, padx=5)
+        # ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=4, padx=5)
 
         # Configure grid weights
         self.columnconfigure(0, weight=1)
@@ -519,7 +519,7 @@ class ManageStatusMappingWindow(ttkb.Toplevel):
         ttkb.Button(button_frame, text="Import SQL", command=self.import_sql).grid(
             row=0, column=2, padx=5
         )
-        ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=3, padx=5)
+        # ttkb.Button(button_frame, text="Close", command=self.destroy).grid(row=0, column=3, padx=5)
 
         # Configure grid weights
         self.columnconfigure(0, weight=1)
