@@ -49,7 +49,7 @@ class DataValidator:
         company_words = {"PT", "PERSERO", "TBK", "LTD", "CV", "KOPERASI"}
         
         # Daftar kata pendek yang harus persis berdiri sendiri
-        short_keywords = {"PT", "WHO", "UN", "TBK", "CV", "LTD", "INC", "CORP", "CO", "LLC", "PTE", "PVT", "BV", "NV", "SA", "GMBH", "AG", "SL", "SRL", "SAS", "SARL", "SPA", "SRL", "SNC", "SCS", "SCA", "SAR", "SASU", "SARL", "SARLU"}
+        short_keywords = {"PT", "WHO", "UN", "TBK", "CV", "LTD", "INC", "CORP", "CO", "LLC", "PTE", "PVT", "BV", "NV", "SA", "GMBH", "AG", "SL", "SRL", "SAS", "SARL", "SPA", "SRL", "SNC", "SCS", "SCA", "SAR", "SASU", "SARLU"}
 
         # Jika keyword pendek ditemukan sekadar sebagai substring, abaikan
         for kw in short_keywords:
@@ -344,6 +344,40 @@ class DataValidator:
         
         return None, None
 
+    def validate_c2_category(self, name, status, bank_code, is_valid_code):
+        """
+        Validasi apakah kategori C2 sudah tepat.
+        Kategori C2 hanya untuk bank luar negeri.
+        
+        Returns:
+            str or None: Kategori yang disarankan jika C2 tidak tepat, None jika sudah tepat
+        """
+        # Cek apakah ini adalah bank
+        if not self.is_standalone_word("BANK", name):
+            return "E0"  # Jika bukan bank, sarankan E0
+            
+        # Cek status untuk konfirmasi bank luar negeri
+        suggested_statuses = self.get_suggested_status(name)
+        
+        # Jika ada suggested status
+        if suggested_statuses:
+            if "ID" in suggested_statuses:
+                return "C1"  # Jika bank dalam negeri, harusnya C1
+            if any(s not in ["ID", "N1"] for s in suggested_statuses):
+                return None  # Status luar negeri ditemukan, C2 sudah tepat
+                
+        # Jika tidak ada suggested status, cek status data
+        if status == "ID":
+            return "C1"  # Jika bank dalam negeri, harusnya C1
+        elif status and status != "N1":
+            return None  # Ada status luar negeri, C2 sudah tepat
+            
+        # Jika tidak ada informasi status yang jelas
+        if is_valid_code:
+            return "C9"  # Jika kode bank valid tapi tidak jelas statusnya
+        
+        return "E0"  # Default jika tidak ada informasi yang cukup
+
     def process_file(self, input_file):
         """
         Memproses file Excel dan melakukan validasi.
@@ -456,6 +490,23 @@ class DataValidator:
                             "status": "N1",
                         })
                     continue  # Skip all other validation checks for this row
+
+                stt_value = row.get("stt", "")
+                forced_categories = self.stt_category_exceptions.get(str(stt_value), [])
+
+                if forced_categories:
+                    # Ambil kategori pertama dari daftar
+                    forced_category = forced_categories[0]
+                    if row["kategori_penerima"] != forced_category:
+                        validation_results.append({
+                            "row": idx + 2,
+                            "column": "kategori_penerima",
+                            "current": row["kategori_penerima"],
+                            "suggested": forced_category,
+                            "name": row["nama_penerima"],
+                            "bank_code": row.get("cKdBank", ""),
+                            "status": row.get("status_penerima", "")
+                        })
 
                 is_penerima_bank = (
                     "BANK" in str(row[COL_NAMA_PENERIMA]).upper() 
@@ -641,6 +692,25 @@ class DataValidator:
                             "status": pembayar_status,
                         }
                     )
+
+                # Tambahkan validasi khusus untuk kategori C2
+                if row["kategori_pembayar"] == "C2":
+                    suggested_category = self.validate_c2_category(
+                        row["nama_pembayar"],
+                        row.get("status_pembayar", ""),
+                        row.get("cKdBank", ""),
+                        is_valid_bank_code_pembayar
+                    )
+                    if suggested_category:
+                        validation_results.append({
+                            "row": idx + 2,
+                            "column": "kategori_pembayar",
+                            "current": "C2",
+                            "suggested": suggested_category,
+                            "name": row["nama_pembayar"],
+                            "bank_code": row.get("cKdBank", ""),
+                            "status": row.get("status_pembayar", ""),
+                        })
 
                 # Check status penerima
                 suggested_status_penerima = self.get_suggested_status(row["nama_penerima"])
