@@ -35,7 +35,7 @@ class ManageMappingWindow(ttkb.Toplevel):
         search_button.pack(side=ttkb.LEFT, padx=(5, 0))
 
         reset_button = ttkb.Button(
-            search_frame, text="Reset", command=self.reset_search
+            search_frame, text="Clear", command=self.reset_search
         )
         reset_button.pack(side=ttkb.LEFT, padx=(5, 0))
 
@@ -275,7 +275,7 @@ class ManageBankCodesWindow(ttkb.Toplevel):
         search_button.pack(side=ttkb.LEFT, padx=(5, 0))
 
         reset_button = ttkb.Button(
-            search_frame, text="Reset", command=self.reset_search
+            search_frame, text="Clear", command=self.reset_search
         )
         reset_button.pack(side=ttkb.LEFT, padx=(5, 0))
 
@@ -475,7 +475,7 @@ class ManageStatusMappingWindow(ttkb.Toplevel):
         search_button.pack(side=ttkb.LEFT, padx=(5, 0))
 
         reset_button = ttkb.Button(
-            search_frame, text="Reset", command=self.reset_search
+            search_frame, text="Clear", command=self.reset_search
         )
         reset_button.pack(side=ttkb.LEFT, padx=(5, 0))
 
