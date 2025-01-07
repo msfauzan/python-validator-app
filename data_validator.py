@@ -31,6 +31,9 @@ class DataValidator:
         config = db_utils.load_config()
         self.stt_category_exceptions = config.get("validation", {}).get("stt_category_exceptions", {})
         self.status_mapping = db_utils.get_status_mapping()
+        
+        # Tambahkan prioritas kategori
+        self.category_priority = ["B0", "C0", "F1", "F2"]
 
     def reload_reference_data(self):
         """Reload mapping dan bank codes dari database."""
@@ -110,7 +113,7 @@ class DataValidator:
             name = re.sub(r"[^\w\s]", " ", name)
             name = " ".join(name.split())
             # Hapus kata-kata lokasi/negara
-            location_words = ["HONG KONG", "SINGAPORE", "INDONESIA", "CHINA", "JAPAN"]
+            location_words = ["HONG KONG", "SINGAPORE", "INDONESIA", "CHINA", "JAPAN", ""]
             for loc in location_words:
                 name = name.replace(loc, "")
             # Hapus kata-kata umum
@@ -158,7 +161,7 @@ class DataValidator:
                 "CORPORATION",
                 "LTD",
                 "LIMITED",
-                "INCORPORATED",
+                "INCORPORATED", 
             ]
             for word in common_words:
                 name = name.replace(f" {word} ", " ")
@@ -288,22 +291,32 @@ class DataValidator:
         Mengembalikan kategori yang ditemukan atau None jika tidak ada yang cocok.
         """
         name = str(name).upper()
-        found_category = None
+        found_categories = {}
         
-        # Pertama, cek keyword-keyword spesifik (prioritas tinggi)
+        # Cek semua keyword yang cocok terlebih dahulu
         for keyword, category in mapping_dict.items():
             if keyword.upper() in ["PT", "CV", "TBK"]:  # Skip generic company identifiers
                 continue
             if self.is_standalone_word(keyword, name):
-                return category  # Langsung return jika menemukan keyword spesifik
-                
-        # Kedua, cek identifier umum seperti PT jika belum ada kategori yang ditemukan
+                if category not in found_categories:
+                    found_categories[category] = keyword
+
+        # Jika ada kategori yang ditemukan, prioritaskan berdasarkan self.category_priority
+        if found_categories:
+            for priority_category in self.category_priority:
+                if priority_category in found_categories:
+                    return priority_category
+
+            # Jika tidak ada dalam priority list, return kategori pertama yang ditemukan
+            return next(iter(found_categories.keys()))
+                    
+        # Jika tidak ada kategori spesifik, cek identifier umum
         for keyword, category in mapping_dict.items():
             if keyword.upper() in ["PT", "CV", "TBK"]:
                 if self.is_standalone_word(keyword, name):
-                    found_category = category
+                    return category
                     
-        return found_category
+        return None
 
     def get_bank_category(self, name, status, bank_code, is_valid_code):
         """
@@ -424,7 +437,12 @@ class DataValidator:
                 raise ValueError("Nilai tahun atau bulan tidak valid")
 
             # Generate dan buat folder output
-            output_folder_name = f"{os.path.splitext(os.path.basename(input_file))[0]}_{tahun}_{str(bulan).zfill(2)}_validated"
+            output_parent_folder = "Output"
+            os.makedirs(output_parent_folder, exist_ok=True)
+            output_folder_name = os.path.join(
+                output_parent_folder,
+                f"{os.path.splitext(os.path.basename(input_file))[0]}_{tahun}_{str(bulan).zfill(2)}_validated"
+            )
             os.makedirs(output_folder_name, exist_ok=True)
             output_file = os.path.join(
                 output_folder_name,
@@ -525,26 +543,6 @@ class DataValidator:
                 penerima_status = str(row.get(COL_STATUS_PENERIMA, "")).upper()
                 pembayar_status = str(row.get(COL_STATUS_PEMBAYAR, "")).upper()
                 is_same_bank = self.is_same_bank(row[COL_NAMA_PENERIMA], row[COL_NAMA_PEMBAYAR])
-
-                suggested_category_penerima = None
-                suggested_category_pembayar = None
-
-                is_penerima_bank = self.is_standalone_word("BANK", row["nama_penerima"])
-                is_pembayar_bank = self.is_standalone_word("BANK", row["nama_pembayar"])
-
-                is_valid_bank_code_penerima = self.validate_bank_code(
-                    row["nama_penerima"], row.get("cKdBank", "")
-                )
-                is_valid_bank_code_pembayar = self.validate_bank_code(
-                    row["nama_pembayar"], row.get("cKdBank", "")
-                )
-
-                penerima_status = str(row.get("status_penerima", "")).upper()
-                pembayar_status = str(row.get("status_pembayar", "")).upper()
-
-                is_same_bank = self.is_same_bank(
-                    row["nama_penerima"], row["nama_pembayar"]
-                )
 
                 suggested_category_penerima = None
                 suggested_category_pembayar = None

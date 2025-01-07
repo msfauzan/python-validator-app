@@ -46,7 +46,6 @@ class App:
             self.root.destroy()
             return
         
-        # Move recent_files initialization before create_interface
         self.recent_files = self.load_recent_files()
             
         self.create_interface()
@@ -75,24 +74,24 @@ class App:
         # File Menu
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open File (Ctrl+O)", command=self.process_file)
+        file_menu.add_command(label="Open File", command=self.process_file)
         file_menu.add_separator()
         file_menu.add_command(label="Recent Validated Folder", command=self.open_validated_folder, state="disabled")
         self.open_validated_folder_menu = file_menu  # Store reference to enable later
-        file_menu.add_command(label="Exit (Alt+F4)", command=self.root.quit)
+        file_menu.add_command(label="Exit", command=self.root.quit)
 
         # Database Menu
         db_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Database", menu=db_menu)
-        db_menu.add_command(label="Manage Mapping (Ctrl+M)", command=self.manage_mapping)
-        db_menu.add_command(label="Manage Bank Codes (Ctrl+B)", command=self.manage_bank_codes)
-        db_menu.add_command(label="Manage Status (Ctrl+S)", command=self.manage_status)  # Add new menu item
+        db_menu.add_command(label="Manage Mapping", command=self.manage_mapping)
+        db_menu.add_command(label="Manage Bank Codes", command=self.manage_bank_codes)
+        db_menu.add_command(label="Manage Status", command=self.manage_status)  # Add new menu item
         # db_menu.add_separator()
         db_menu.add_command(label="Import SQL", command=self.import_sql)  # Add new menu item
 
         # Help Menu
         help_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Help", menu=help_menu)
+        menubar.add_cascade(label="Others", menu=help_menu)
         help_menu.add_command(label="About", command=self.show_about)
         help_menu.add_command(label="How to Import SQL", command=self.show_help_sql)
 
@@ -173,8 +172,9 @@ class App:
             progress_info_frame, 
             orient="horizontal",
             mode="determinate",
-            length=300
+            length=600
         )
+        progress_info_frame.grid_columnconfigure(0, weight=1)
         self.progress_bar.grid(row=0, column=0, sticky="ew", padx=(0, 10))
 
         # Database Management dengan grouping yang lebih baik
@@ -258,23 +258,29 @@ class App:
         help_text = """
 Panduan Penggunaan Data Validation Tool
 
-1. Memulai Validasi:
-   - Klik tombol "Pilih File Excel" atau tekan Ctrl+O
+1. Memanipulasi Data:
+   - Klik tombol Manage Categorical Mapping untuk mengelola kategori
+   - Klik tombol Manage Bank Codes untuk mengelola kode bank
+   - Klik tombol Manage Status Mapping untuk mengelola status mapping
+   - Klik tombol Import SQL untuk mengimpor file SQL ke database
+
+2. Memulai Validasi:
+   - Klik tombol "Choose Excel File" atau tekan Ctrl+O
    - Pilih file Excel yang akan divalidasi
    - Tunggu proses validasi selesai
 
-2. Format Excel yang Didukung:
+3. Format Excel yang Didukung:
    - File harus memiliki kolom: nama_penerima, kategori_penerima, dll
    - Kategori yang valid: B0, C0, C9, D0, E0, F1, F2, Z9
 
-3. Shortcuts:
+4. Shortcuts:
    - Ctrl+O : Buka file
    - Ctrl+M : Kelola mapping
    - Ctrl+B : Kelola kode bank
    - Ctrl+S : Kelola status mapping
    - F1     : Bantuan
 
-4. Hasil Validasi:
+5. Hasil Validasi:
    - File hasil akan disimpan dengan suffix "_validated"
    - Sel yang perlu perhatian akan ditandai kuning
    - Hover pada sel untuk melihat saran perubahan
@@ -301,7 +307,6 @@ Panduan Penggunaan Data Validation Tool
         """Menampilkan dialog About."""
         messagebox.showinfo(
             "About",
-            "\nVersion 1.0\n\n" +
             "Shortcuts:\n" +
             "Ctrl+O: Open File\n" +
             "Ctrl+M: Manage Mapping\n" +
