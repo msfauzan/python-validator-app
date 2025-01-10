@@ -2,3 +2,4 @@
 *.xls
 *.pyc
 app.log
+__pycache__/
