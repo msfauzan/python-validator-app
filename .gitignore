@@ -5,3 +5,4 @@ app.log
 __pycache__/
 build/
 dist/
+venv/
