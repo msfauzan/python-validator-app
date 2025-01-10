@@ -3,3 +3,5 @@
 *.pyc
 app.log
 __pycache__/
+build/
+dist/
